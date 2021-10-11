@@ -2,9 +2,12 @@
 
 /*
 // https://www.w3schools.com/xml
-pre-defined entity references: (&lt; <)(&gt; >)(&amp; &)(&apos; ')(&quot; ").
-ignore <!-- comment -->.
-ignore prolog <?xml version="1.0" encoding="UTF-8"?>
+// https://www.tutorialspoint.com/xml/index.htm
+<?xml version = "1.0" encoding = "UTF-8" standalone = "no" ?>
+attributes either single or double quotes
+character entity references: (&lt; <)(&gt; >)(&amp; &)(&apos; ')(&quot; ")(&#number;)
+<!-- comment -->.
+<![CDATA[ ignored ]]>
 */
 
 #ifndef PARSR
@@ -133,6 +136,11 @@ struct parsr_document
 
 	bool parse_string(const std::string& str)
 	{
+		/*
+		:keep deepening pointer at new elements,
+		:then at first closing compare names and step out pointer
+		*/
+
 		parsr_node node;
 		parsr_node* node_ptr = &node;
 
@@ -145,11 +153,45 @@ struct parsr_document
 			size_t a = str.find_first_of("<", alpha);
 			if (a != std::string::npos)
 			{
-				size_t b = str.find_first_of(">", a);
+				size_t b = str.find_first_of(" />", a);
 				if (b != std::string::npos)
 				{
-					node_ptr->nodes.push_back({ str.substr(a + 1, b - (a + 1)) });
-					node_ptr = &node_ptr->nodes.back();
+					switch (str[b])
+					{
+					case ' ':
+						size_t c = str.find_first_of("/>", b);
+						if (c != std::string::npos)
+						{
+							switch (str[c])
+							{
+							case '/':
+								if (str[c + 1] == '>')
+								{
+									node_ptr->nodes.push_back({ str.substr(a + 1, b - (a + 1)) });
+									node_ptr = &node_ptr->nodes.back();
+								}
+								break;
+							case '>':
+
+								break;
+							}
+						}
+						else
+						{
+							well_formed = false;
+						}
+						break;
+					case '/':
+						if (str[b + 1] == '>')
+						{
+							node_ptr->nodes.push_back({ str.substr(a + 1, b - (a + 1)) });
+							node_ptr = &node_ptr->nodes.back();
+						}
+						break;
+					case '>':
+						
+						break;
+					}
 
 					alpha = b + 1;
 				}
@@ -167,20 +209,12 @@ struct parsr_document
 		clear();
 		// paste
 
-		std::cout << node << std::endl;
+		std::cout << std::endl << node << std::endl;
 
 		return true;
 	}
 
 };
-
-
-int parsr_main()
-{
-	parsr_document doc("../kira_engine/src/example.xml");
-	return 0;
-}
-
 
 #endif
 
