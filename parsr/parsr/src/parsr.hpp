@@ -28,7 +28,7 @@ std::ostream& operator<< (std::ostream& stream, const std::list<T>& list)
 {
 	for (const auto& i : list)
 	{
-		std::cout << i;
+		stream << i;
 	}
 
 	return stream;
@@ -138,9 +138,9 @@ struct parsr_document
 	bool parse_string(const std::string& str)
 	{
 		parsr_node todo;
-		parsr_node* last_t = &todo.nodes.back();
+		parsr_node* last_t = &todo;
 		parsr_node done;
-		parsr_node* last_d = &done.nodes.back();
+		parsr_node* last_d = &done;
 
 		size_t alpha = 0;
 		size_t omega = std::string::npos;
@@ -150,7 +150,7 @@ struct parsr_document
 		bool well_formed = true;
 		while (well_formed)
 		{
-			a = str.find_first_of("<", alpha);
+			a = str.find("<", alpha);
 			if (a != std::string::npos)
 			{
 				alpha = a + 1;
@@ -158,22 +158,24 @@ struct parsr_document
 				if (b != std::string::npos)
 				{
 					alpha = b + 1;
-					todo.nodes.push_back({ last_t,str.substr(a + 1,b - (a + 1)) });
-					last_t = &todo.nodes.back();
+					// TODO: attributes + text
+					last_t->nodes.push_back({ last_t,str.substr(a + 1,b - (a + 1)) });
+					last_t = &last_t->nodes.back();
 					c = str.find("</", b + 1);
 					if (c != std::string::npos)
 					{
 						alpha = c + 1;
-						d = str.find_first_of(">", c + 2);
+						d = str.find(">", c + 2);
 						if (d != std::string::npos)
 						{
 							alpha = d + 1;
 							if (last_t->name == str.substr(c + 2, d - (c + 2)))
 							{
-								done.nodes.push_back({ last_d,str.substr(c + 2,d - (c + 2)) });
-								last_d = &done.nodes.back();
-								last_t->parent->nodes.pop_back();
-								last_t = &last_t->parent->nodes.back();
+								last_d->nodes.push_back({ last_d,str.substr(c + 2,d - (c + 2)) });
+								last_d = &last_d->nodes.back();
+								last_t = last_t->parent;
+								last_t->nodes.pop_back();
+								last_t = &last_t->nodes.back();
 							}
 						}
 					}
