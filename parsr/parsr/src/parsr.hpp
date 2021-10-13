@@ -26,7 +26,7 @@ character entity references: (&lt; <)(&gt; >)(&amp; &)(&apos; ')(&quot; ")(&#num
 template<class T>
 std::ostream& operator<< (std::ostream& stream, const std::list<T>& list)
 {
-	for (auto& i : list)
+	for (const auto& i : list)
 	{
 		std::cout << i;
 	}
@@ -53,6 +53,7 @@ struct parsr_attribute
 
 struct parsr_node
 {
+	parsr_node* parent;
 	std::string name;
 	std::string text;
 	std::list<parsr_attribute> attributes;
@@ -136,64 +137,46 @@ struct parsr_document
 
 	bool parse_string(const std::string& str)
 	{
-		/*
-		:keep deepening pointer at new elements,
-		:then at first closing compare names and step out pointer
-		*/
-
-		parsr_node node;
-		parsr_node* node_ptr = &node;
+		parsr_node todo;
+		parsr_node* last_t = &todo.nodes.back();
+		parsr_node done;
+		parsr_node* last_d = &done.nodes.back();
 
 		size_t alpha = 0;
 		size_t omega = std::string::npos;
 
+		size_t a, b, c, d;
+
 		bool well_formed = true;
 		while (well_formed)
 		{
-			size_t a = str.find_first_of("<", alpha);
+			a = str.find_first_of("<", alpha);
 			if (a != std::string::npos)
 			{
-				size_t b = str.find_first_of(" />", a);
+				alpha = a + 1;
+				b = str.find_first_of(" />", a + 1);
 				if (b != std::string::npos)
 				{
-					switch (str[b])
+					alpha = b + 1;
+					todo.nodes.push_back({ last_t,str.substr(a + 1,b - (a + 1)) });
+					last_t = &todo.nodes.back();
+					c = str.find("</", b + 1);
+					if (c != std::string::npos)
 					{
-					case ' ':
-						size_t c = str.find_first_of("/>", b);
-						if (c != std::string::npos)
+						alpha = c + 1;
+						d = str.find_first_of(">", c + 2);
+						if (d != std::string::npos)
 						{
-							switch (str[c])
+							alpha = d + 1;
+							if (last_t->name == str.substr(c + 2, d - (c + 2)))
 							{
-							case '/':
-								if (str[c + 1] == '>')
-								{
-									node_ptr->nodes.push_back({ str.substr(a + 1, b - (a + 1)) });
-									node_ptr = &node_ptr->nodes.back();
-								}
-								break;
-							case '>':
-
-								break;
+								done.nodes.push_back({ last_d,str.substr(c + 2,d - (c + 2)) });
+								last_d = &done.nodes.back();
+								last_t->parent->nodes.pop_back();
+								last_t = &last_t->parent->nodes.back();
 							}
 						}
-						else
-						{
-							well_formed = false;
-						}
-						break;
-					case '/':
-						if (str[b + 1] == '>')
-						{
-							node_ptr->nodes.push_back({ str.substr(a + 1, b - (a + 1)) });
-							node_ptr = &node_ptr->nodes.back();
-						}
-						break;
-					case '>':
-						
-						break;
 					}
-
-					alpha = b + 1;
 				}
 				else
 				{
@@ -206,10 +189,11 @@ struct parsr_document
 			}
 		}
 
-		clear();
+		// clear();
 		// paste
 
-		std::cout << std::endl << node << std::endl;
+		std::cout << std::endl << todo << std::endl;
+		std::cout << std::endl << done << std::endl;
 
 		return true;
 	}
