@@ -118,7 +118,7 @@ struct parsr_document
 		auto finish_clock = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<float> elapsed = finish_clock - start_clock;
 
-		std::cout << std::endl << file_name_path << " (" << -1 << " bytes # " << elapsed.count() << " seconds)" << std::endl << str << std::endl;
+		std::cout << std::endl << file_name_path << " (" << -1 << " bytes # " << elapsed.count() << " seconds)" << std::endl << str << std::endl << std::endl;
 
 		if (parse_string(str))
 		{
@@ -137,15 +137,13 @@ struct parsr_document
 
 	bool parse_string(const std::string& str)
 	{
-		parsr_node todo;
-		parsr_node* last_t = &todo;
-		parsr_node done;
-		parsr_node* last_d = &done;
+		std::list<std::string> list;
 
 		size_t alpha = 0;
 		size_t omega = std::string::npos;
 
 		size_t a, b, c, d;
+		std::string x, y;
 
 		bool well_formed = true;
 		while (well_formed)
@@ -154,30 +152,25 @@ struct parsr_document
 			if (a != std::string::npos)
 			{
 				alpha = a + 1;
-				b = str.find_first_of(" />", a + 1);
+				b = str.find(">", alpha);
 				if (b != std::string::npos)
 				{
 					alpha = b + 1;
-					// TODO: attributes + text
-					last_t->nodes.push_back({ last_t,str.substr(a + 1,b - (a + 1)) });
-					last_t = &last_t->nodes.back();
-					c = str.find("</", b + 1);
-					if (c != std::string::npos)
+					if (str[a + 1] == '/')
 					{
-						alpha = c + 1;
-						d = str.find(">", c + 2);
-						if (d != std::string::npos)
+						y = str.substr(a + 2, b - (a + 2));
+						std::cout << "found tail " << y << std::endl;
+						if (list.back() == y)
 						{
-							alpha = d + 1;
-							if (last_t->name == str.substr(c + 2, d - (c + 2)))
-							{
-								last_d->nodes.push_back({ last_d,str.substr(c + 2,d - (c + 2)) });
-								last_d = &last_d->nodes.back();
-								last_t = last_t->parent;
-								last_t->nodes.pop_back();
-								last_t = &last_t->nodes.back();
-							}
+							std::cout << "--> pop " << list.back() << std::endl;
+							list.pop_back();
 						}
+					}
+					else
+					{
+						x = str.substr(a + 1, b - (a + 1));
+						std::cout << "++> push " << x << std::endl;
+						list.push_back(x);
 					}
 				}
 				else
@@ -193,9 +186,6 @@ struct parsr_document
 
 		// clear();
 		// paste
-
-		std::cout << std::endl << todo << std::endl;
-		std::cout << std::endl << done << std::endl;
 
 		return true;
 	}
