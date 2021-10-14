@@ -53,7 +53,7 @@ struct parsr_attribute
 
 struct parsr_node
 {
-	parsr_node* parent;
+	parsr_node* parent = nullptr;
 	std::string name;
 	std::string text;
 	std::list<parsr_attribute> attributes;
@@ -137,14 +137,21 @@ struct parsr_document
 
 	bool parse_string(const std::string& str)
 	{
-		std::list<std::string> list;
+		parsr_node node;
 
 		size_t alpha = 0;
 		size_t omega = std::string::npos;
 
 		size_t a, b, c, d;
-		std::string x, y;
+		std::string x, y, z;
 
+		// TODO:
+		// TODO: achieve proper nesting to root
+		// TODO: throw ill-formed cases
+		// TODO: fill node with attributes if any
+		// TODO: check attribute uniqueness
+		// TODO: fill node text if any
+		// TODO: check only one root node
 		bool well_formed = true;
 		while (well_formed)
 		{
@@ -160,17 +167,29 @@ struct parsr_document
 					{
 						y = str.substr(a + 2, b - (a + 2));
 						std::cout << "found tail " << y << std::endl;
-						if (list.back() == y)
+						if (node.nodes.back().name == y)
 						{
-							std::cout << "--> pop " << list.back() << std::endl;
-							list.pop_back();
+							std::cout << "--> pop " << node.nodes.back().name << std::endl;
+							node.nodes.pop_back();
 						}
+						else
+						{
+							well_formed = false;
+						}
+					}
+					else if (str[b - 1] == '/')
+					{
+						z = str.substr(a + 1, b - (a + 2));
+						std::cout << "++> push " << z << std::endl;
+						node.nodes.push_back({ nullptr,z });
+						std::cout << "--> pop " << node.nodes.back().name << std::endl;
+						node.nodes.pop_back();
 					}
 					else
 					{
 						x = str.substr(a + 1, b - (a + 1));
 						std::cout << "++> push " << x << std::endl;
-						list.push_back(x);
+						node.nodes.push_back({ nullptr,x });
 					}
 				}
 				else
