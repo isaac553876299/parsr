@@ -138,6 +138,8 @@ struct parsr_document
 	bool parse_string(const std::string& str)
 	{
 		parsr_node node;
+		parsr_node* node2append2 = &node;
+		parsr_node* tmp = node2append2;
 
 		size_t alpha = 0;
 		size_t omega = std::string::npos;
@@ -146,7 +148,7 @@ struct parsr_document
 		std::string x, y, z;
 
 		// TODO:
-		// TODO: achieve proper nesting to root
+		// TODO: achieve proper nesting
 		// TODO: throw ill-formed cases
 		// TODO: fill node with attributes if any
 		// TODO: check attribute uniqueness
@@ -167,10 +169,11 @@ struct parsr_document
 					{
 						y = str.substr(a + 2, b - (a + 2));
 						std::cout << "found tail " << y << std::endl;
-						if (node.nodes.back().name == y)
+						if (node2append2->name == y)
 						{
-							std::cout << "--> pop " << node.nodes.back().name << std::endl;
-							node.nodes.pop_back();
+							node2append2 = node2append2->parent;
+							std::cout << "--> pop " << node2append2->nodes.back().name << std::endl;
+							node2append2->nodes.pop_back();
 						}
 						else
 						{
@@ -181,15 +184,18 @@ struct parsr_document
 					{
 						z = str.substr(a + 1, b - (a + 2));
 						std::cout << "++> push " << z << std::endl;
-						node.nodes.push_back({ nullptr,z });
-						std::cout << "--> pop " << node.nodes.back().name << std::endl;
-						node.nodes.pop_back();
+						node2append2->nodes.push_back({ node2append2,z });
+						node2append2 = &node2append2->nodes.back();
+						std::cout << "--> pop " << node2append2->name << std::endl;
+						node2append2 = node2append2->parent;
+						node2append2->nodes.pop_back();
 					}
 					else
 					{
 						x = str.substr(a + 1, b - (a + 1));
 						std::cout << "++> push " << x << std::endl;
-						node.nodes.push_back({ nullptr,x });
+						node2append2->nodes.push_back({ node2append2,x });
+						node2append2 = &node2append2->nodes.back();
 					}
 				}
 				else
@@ -202,7 +208,7 @@ struct parsr_document
 				well_formed = false;
 			}
 		}
-
+		std::cout << std::endl << node << std::endl;
 		// clear();
 		// paste
 
