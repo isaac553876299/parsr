@@ -22,6 +22,24 @@ character entity references: (&lt; <)(&gt; >)(&amp; &)(&apos; ')(&quot; ")(&#num
 #include <sstream>
 
 #
+struct parsr_config
+{
+	const unsigned int indent;
+	const char* tag;
+	const char* attribute;
+	const char* bracket;
+};
+constexpr const parsr_config config_xml{ 2,"</>","=\"\'","{}" };
+
+const std::string indent_n(unsigned int n)
+{
+	std::string r;
+	for (unsigned int i = 0; i < n; ++i)
+	{
+		r += std::string(2, ' ');
+	}
+	return r;
+}
 
 template<class T>
 std::ostream& operator<< (std::ostream& stream, const std::list<T>& list)
@@ -54,6 +72,7 @@ struct parsr_attribute
 struct parsr_node
 {
 	parsr_node* parent = nullptr;
+	unsigned int indent = 0;
 	std::string name;
 	std::string text;
 	std::list<parsr_attribute> attributes;
@@ -69,7 +88,11 @@ struct parsr_node
 
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_node& node)
 	{
-		return stream << "<" << node.name << node.attributes << ">" << node.text << node.nodes;
+		return stream
+			<< indent_n(node.indent) << "<" << node.name << node.attributes << ">" <<
+			"(child of " << ((node.parent) ? (node.parent->name.empty() ? "root" : node.parent->name) : "none") << ")" << std::endl
+			<< node.text/* << std::endl*/ << node.nodes/* << std::endl*/
+			<< indent_n(node.indent) << "</" << node.name << ">" << std::endl;
 	}
 };
 
@@ -140,6 +163,7 @@ struct parsr_document
 		parsr_node node;
 		parsr_node* node2append2 = &node;
 		parsr_node* tmp = node2append2;
+		unsigned int indent = 0;
 
 		size_t alpha = 0;
 		size_t omega = std::string::npos;
@@ -147,13 +171,13 @@ struct parsr_document
 		size_t a, b, c, d;
 		std::string x, y, z;
 
-		// TODO:
-		// TODO: achieve proper nesting
-		// TODO: throw ill-formed cases
-		// TODO: fill node with attributes if any
-		// TODO: check attribute uniqueness
-		// TODO: fill node text if any
-		// TODO: check only one root node
+		// [O]: achieve proper nesting
+		// [X]: throw ill-formed cases
+		// [X]: fill node with attributes if any
+		// [X]: check attribute uniqueness
+		// [X]: fill node text if any
+		// [X]: check only one root node
+
 		bool well_formed = true;
 		while (well_formed)
 		{
@@ -173,7 +197,8 @@ struct parsr_document
 						{
 							node2append2 = node2append2->parent;
 							std::cout << "--> pop " << node2append2->nodes.back().name << std::endl;
-							node2append2->nodes.pop_back();
+							//node2append2->nodes.pop_back();
+							indent--;
 						}
 						else
 						{
@@ -184,17 +209,18 @@ struct parsr_document
 					{
 						z = str.substr(a + 1, b - (a + 2));
 						std::cout << "++> push " << z << std::endl;
-						node2append2->nodes.push_back({ node2append2,z });
+						node2append2->nodes.push_back({ node2append2,indent/*++*/,z});
 						node2append2 = &node2append2->nodes.back();
 						std::cout << "--> pop " << node2append2->name << std::endl;
 						node2append2 = node2append2->parent;
-						node2append2->nodes.pop_back();
+						//node2append2->nodes.pop_back();
+						//indent--;
 					}
 					else
 					{
 						x = str.substr(a + 1, b - (a + 1));
 						std::cout << "++> push " << x << std::endl;
-						node2append2->nodes.push_back({ node2append2,x });
+						node2append2->nodes.push_back({ node2append2,indent++,x });
 						node2append2 = &node2append2->nodes.back();
 					}
 				}
