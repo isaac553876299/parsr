@@ -1,8 +1,3 @@
 <node1>
-  <node2/>
-  <node3>
-    <node4>
-      <node5></node5>
-    </node4>
-  </node3>
+  <node2 hello="konnichiwa"></node2>
 </node1>

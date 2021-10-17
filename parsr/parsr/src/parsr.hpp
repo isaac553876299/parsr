@@ -22,15 +22,6 @@ character entity references: (&lt; <)(&gt; >)(&amp; &)(&apos; ')(&quot; ")(&#num
 #include <sstream>
 
 #
-struct parsr_config
-{
-	const unsigned int indent;
-	const char* tag;
-	const char* attribute;
-	const char* bracket;
-};
-constexpr const parsr_config config_xml{ 2,"</>","=\"\'","{}" };
-
 const std::string indent_n(unsigned int n)
 {
 	std::string r;
