@@ -165,7 +165,7 @@ struct parsr_document
 
 		// [O]: achieve proper nesting
 		// [X]: throw ill-formed cases
-		// [X]: fill node with attributes if any
+		// [?]: fill node with attributes if any
 		// [X]: check attribute uniqueness
 		// [X]: fill node text if any
 		// [X]: check only one root node
@@ -193,10 +193,6 @@ struct parsr_document
 							well_formed = false;
 						}
 					}
-					else if (str[b - 1] == '/')
-					{
-						node2append2->nodes.push_back({ node2append2,indent/*++*/,str.substr(a + 1, b - (a + 2)) });
-					}
 					else
 					{
 						c = str.find(" ", a + 1, b - (a + 1));
@@ -221,8 +217,15 @@ struct parsr_document
 						}
 						else
 						{
-							node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1, b - (a + 1)) });
-							node2append2 = &node2append2->nodes.back();
+							if (str[b - 1] == '/')
+							{
+								node2append2->nodes.push_back({ node2append2,indent/*++*/,str.substr(a + 1, b - (a + 2)) });
+							}
+							else
+							{
+								node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1, b - (a + 1)) });
+								node2append2 = &node2append2->nodes.back();
+							}
 						}
 					}
 				}
