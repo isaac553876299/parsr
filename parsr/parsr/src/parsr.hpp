@@ -79,10 +79,11 @@ struct parsr_node
 
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_node& node)
 	{
+		// [X]: print /> if text is empty
 		return stream
-			<< indent_n(node.indent) << "<" << node.name << node.attributes << ">" <<
-			"(child of " << ((node.parent) ? (node.parent->name.empty() ? "root" : node.parent->name) : "none") << ")" << std::endl
-			<< node.text/* << std::endl*/ << node.nodes/* << std::endl*/
+			<< indent_n(node.indent) << "<" << node.name << node.attributes << ">"
+			//<< "(child of " << ((node.parent) ? (node.parent->name.empty() ? "root" : node.parent->name) : "none") << ")"
+			<< std::endl << node.text/* << std::endl*/ << node.nodes/* << std::endl*/
 			<< indent_n(node.indent) << "</" << node.name << ">" << std::endl;
 	}
 };
@@ -154,12 +155,12 @@ struct parsr_document
 		parsr_node node;
 		parsr_node* node2append2 = &node;
 		parsr_node* tmp = node2append2;
-		unsigned int indent = 0;
+		unsigned int indent = 1;
 
 		size_t alpha = 0;
 		size_t omega = std::string::npos;
 
-		size_t a, b, c, d;
+		size_t a, b, c, d, e, f, g, h, i;
 		std::string x, y, z;
 
 		// [O]: achieve proper nesting
@@ -182,13 +183,9 @@ struct parsr_document
 					alpha = b + 1;
 					if (str[a + 1] == '/')
 					{
-						y = str.substr(a + 2, b - (a + 2));
-						std::cout << "found tail " << y << std::endl;
-						if (node2append2->name == y)
+						if (node2append2->name == str.substr(a + 2, b - (a + 2)))
 						{
 							node2append2 = node2append2->parent;
-							std::cout << "--> pop " << node2append2->nodes.back().name << std::endl;
-							//node2append2->nodes.pop_back();
 							indent--;
 						}
 						else
@@ -198,21 +195,35 @@ struct parsr_document
 					}
 					else if (str[b - 1] == '/')
 					{
-						z = str.substr(a + 1, b - (a + 2));
-						std::cout << "++> push " << z << std::endl;
-						node2append2->nodes.push_back({ node2append2,indent/*++*/,z});
-						node2append2 = &node2append2->nodes.back();
-						std::cout << "--> pop " << node2append2->name << std::endl;
-						node2append2 = node2append2->parent;
-						//node2append2->nodes.pop_back();
-						//indent--;
+						node2append2->nodes.push_back({ node2append2,indent/*++*/,str.substr(a + 1, b - (a + 2)) });
 					}
 					else
 					{
-						x = str.substr(a + 1, b - (a + 1));
-						std::cout << "++> push " << x << std::endl;
-						node2append2->nodes.push_back({ node2append2,indent++,x });
-						node2append2 = &node2append2->nodes.back();
+						c = str.find(" ", a + 1, b - (a + 1));
+						if (c != std::string::npos)
+						{
+							node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1, c - (a + 1)) });
+							node2append2 = &node2append2->nodes.back();//
+
+							d = str.find("=", c + 1, b - (a + 1));
+							if (d != std::string::npos)
+							{
+								e = str.find("\"", d + 1, b - (a + 1));
+								if (e != std::string::npos)
+								{
+									f = str.find("\"", e + 1, b - (a + 1));
+									if (f != std::string::npos)
+									{
+										node2append2->attributes.push_back({ str.substr(c + 1, d - (c + 1)), str.substr(e + 1, f - (e + 1)) });
+									}
+								}
+							}
+						}
+						else
+						{
+							node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1, b - (a + 1)) });
+							node2append2 = &node2append2->nodes.back();
+						}
 					}
 				}
 				else

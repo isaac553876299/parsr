@@ -1,3 +1,6 @@
-<node1>
-  <node2 hello="konnichiwa"></node2>
-</node1>
+<grupos>
+  <grupo nombre="TDM">
+    <subgrupo nombre="laPana"/>
+  </grupo>
+  <grupo nombre="pito"/>
+</grupos>
