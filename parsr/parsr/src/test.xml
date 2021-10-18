@@ -1,6 +1,8 @@
-<grupos>
-  <grupo nombre="TDM">
-    <subgrupo nombre="laPana"/>
-  </grupo>
-  <grupo nombre="pito"/>
-</grupos>
+<node1>
+  <node999></node999>
+  <node2 val="xd">
+    <node3 val="lol"/>
+    <node3 val="LOL"/>
+  </node2>
+  <node2 val="XD"/>
+</node1>

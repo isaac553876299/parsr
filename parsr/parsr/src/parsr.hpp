@@ -71,6 +71,7 @@ struct parsr_node
 
 	void clear()
 	{
+		// parent?
 		name.clear();
 		text.clear();
 		attributes.clear();
@@ -79,12 +80,17 @@ struct parsr_node
 
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_node& node)
 	{
-		// [X]: print /> if text is empty
-		return stream
-			<< indent_n(node.indent) << "<" << node.name << node.attributes << ">"
-			//<< "(child of " << ((node.parent) ? (node.parent->name.empty() ? "root" : node.parent->name) : "none") << ")"
-			<< std::endl << node.text/* << std::endl*/ << node.nodes/* << std::endl*/
-			<< indent_n(node.indent) << "</" << node.name << ">" << std::endl;
+		//<< "(child of " << ((node.parent) ? (node.parent->name.empty() ? "root" : node.parent->name) : "none") << ")"
+		stream << indent_n(node.indent) << "<" << node.name << node.attributes;
+		if (node.text.empty() && node.nodes.empty())
+		{
+			stream << "/>" << std::endl; // perhaps
+		}
+		else
+		{
+			stream << ">" << node.text << std::endl << node.nodes << indent_n(node.indent) << "</" << node.name << ">" << std::endl;
+		}
+		return stream;
 	}
 };
 
@@ -163,8 +169,7 @@ struct parsr_document
 		size_t a, b, c, d, e, f, g, h, i;
 		std::string x, y, z;
 
-		// [O]: achieve proper nesting
-		// [X]: throw ill-formed cases
+		// [?]: throw ill-formed cases
 		// [?]: fill node with attributes if any
 		// [X]: check attribute uniqueness
 		// [X]: fill node text if any
@@ -174,45 +179,48 @@ struct parsr_document
 		while (well_formed)
 		{
 			a = str.find("<", alpha);
-			if (a != std::string::npos)
+			if (well_formed = (a != std::string::npos))
 			{
 				alpha = a + 1;
 				b = str.find(">", alpha);
-				if (b != std::string::npos)
+				if (well_formed = (b != std::string::npos))
 				{
 					alpha = b + 1;
 					if (str[a + 1] == '/')
 					{
-						if (node2append2->name == str.substr(a + 2, b - (a + 2)))
+						if (well_formed = (node2append2->name == str.substr(a + 2, b - (a + 2))))
 						{
 							node2append2 = node2append2->parent;
-							indent--;
-						}
-						else
-						{
-							well_formed = false;
+							--indent;
 						}
 					}
 					else
 					{
-						c = str.find(" ", a + 1, b - (a + 1));
-						if (c != std::string::npos)
+						// ERROR = str.find(" ", x + 1, y - (x + 1)); any single character inside "" is [2]
+						c = str.find(' ', a + 1);
+						if (c != std::string::npos) if (c < b)
 						{
 							node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1, c - (a + 1)) });
-							node2append2 = &node2append2->nodes.back();//
+							node2append2 = &node2append2->nodes.back();
 
-							d = str.find("=", c + 1, b - (a + 1));
-							if (d != std::string::npos)
+							d = str.find('=', c + 1);
+							if (well_formed = (d != std::string::npos)) if (d < b)
 							{
-								e = str.find("\"", d + 1, b - (a + 1));
-								if (e != std::string::npos)
+								e = str.find('\"', d + 1);
+								if (well_formed = (e != std::string::npos)) if (e < b)
 								{
-									f = str.find("\"", e + 1, b - (a + 1));
-									if (f != std::string::npos)
+									f = str.find('\"', e + 1);
+									if (well_formed = (f != std::string::npos)) if (f < b)
 									{
 										node2append2->attributes.push_back({ str.substr(c + 1, d - (c + 1)), str.substr(e + 1, f - (e + 1)) });
 									}
 								}
+							}
+
+							if (str[b - 1] == '/')
+							{
+								node2append2 = node2append2->parent;
+								--indent;
 							}
 						}
 						else
@@ -229,14 +237,6 @@ struct parsr_document
 						}
 					}
 				}
-				else
-				{
-					well_formed = false;
-				}
-			}
-			else
-			{
-				well_formed = false;
 			}
 		}
 		std::cout << std::endl << node << std::endl;
