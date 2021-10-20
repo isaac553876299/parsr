@@ -22,6 +22,7 @@ character entity references: (&lt; <)(&gt; >)(&amp; &)(&apos; ')(&quot; ")(&#num
 #include <sstream>
 
 #
+
 const std::string indent_n(unsigned int n)
 {
 	std::string r;
@@ -160,7 +161,6 @@ struct parsr_document
 	{
 		parsr_node node;
 		parsr_node* node2append2 = &node;
-		parsr_node* tmp = node2append2;
 		unsigned int indent = 1;
 
 		size_t alpha = 0;
@@ -175,17 +175,23 @@ struct parsr_document
 		// [X]: fill node text if any
 		// [X]: check only one root node
 
+		// ERROR = str.find(" ", x + 1, y - (x + 1)); any single character inside "" is [2]
+
+		std::list<size_t> tokens;
+		for (size_t i = 0; i < std::string::npos; i = str.find_first_of("</ =>", i + 1))
+		{
+			tokens.push_back(i);
+		}
+
 		bool well_formed = true;
 		while (well_formed)
 		{
 			a = str.find("<", alpha);
-			if (well_formed = (a != std::string::npos))
+			if (well_formed = (a != omega))
 			{
-				alpha = a + 1;
-				b = str.find(">", alpha);
-				if (well_formed = (b != std::string::npos))
+				b = str.find(">", a + 1);
+				if (well_formed = (b != omega))
 				{
-					alpha = b + 1;
 					if (str[a + 1] == '/')
 					{
 						if (well_formed = (node2append2->name == str.substr(a + 2, b - (a + 2))))
@@ -196,21 +202,64 @@ struct parsr_document
 					}
 					else
 					{
-						// ERROR = str.find(" ", x + 1, y - (x + 1)); any single character inside "" is [2]
+						if (0) {
+							c = str.find_first_of(">/ ", a + 1, b - (a + 1));
+							if (well_formed = (c != omega))
+							{
+								std::string x = str.substr(a + 1, c - (a + 1));
+								switch (str[c])
+								{
+								case '>':
+									node2append2->nodes.push_back({ node2append2,indent++,x });
+									node2append2 = &node2append2->nodes.back();
+									break;
+								case '/':
+									if (well_formed = (str[c + 1] == '>'))
+									{
+										node2append2->nodes.push_back({ node2append2,indent/*++*/,x });
+									}
+									break;
+								case ' ':
+									while (c != b/* && c < b*/)
+									{
+										c = str.find(' ', a + 1);
+										if (c != omega) if (c < b)
+										{
+											d = str.find('=', c + 1);
+											if (well_formed = (d != omega)) if (d < b)
+											{
+												e = str.find('\"', d + 1);
+												if (well_formed = (e != omega)) if (e < b)
+												{
+													f = str.find('\"', e + 1);
+													if (well_formed = (f != omega)) if (f < b)
+													{
+														node2append2->attributes.push_back({ str.substr(c + 1, d - (c + 1)), str.substr(e + 1, f - (e + 1)) });
+														c = f + 1;
+													}
+												}
+											}
+										}
+									}
+									break;
+								}
+							}
+						}
+
 						c = str.find(' ', a + 1);
-						if (c != std::string::npos) if (c < b)
+						if (c != omega) if (c < b)
 						{
 							node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1, c - (a + 1)) });
 							node2append2 = &node2append2->nodes.back();
 
 							d = str.find('=', c + 1);
-							if (well_formed = (d != std::string::npos)) if (d < b)
+							if (well_formed = (d != omega)) if (d < b)
 							{
 								e = str.find('\"', d + 1);
-								if (well_formed = (e != std::string::npos)) if (e < b)
+								if (well_formed = (e != omega)) if (e < b)
 								{
 									f = str.find('\"', e + 1);
-									if (well_formed = (f != std::string::npos)) if (f < b)
+									if (well_formed = (f != omega)) if (f < b)
 									{
 										node2append2->attributes.push_back({ str.substr(c + 1, d - (c + 1)), str.substr(e + 1, f - (e + 1)) });
 									}
@@ -236,7 +285,9 @@ struct parsr_document
 							}
 						}
 					}
+					alpha = b + 1;
 				}
+				alpha = a + 1;
 			}
 		}
 		std::cout << std::endl << node << std::endl;

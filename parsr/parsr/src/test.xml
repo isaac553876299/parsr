@@ -1,8 +1,5 @@
-<node1>
-  <node999></node999>
-  <node2 val="xd">
-    <node3 val="lol"/>
-    <node3 val="LOL"/>
-  </node2>
-  <node2 val="XD"/>
-</node1>
+<node>
+  <subnode a="0" b="1">
+    <subnode c="2"/>
+  </subnode>
+</node>
