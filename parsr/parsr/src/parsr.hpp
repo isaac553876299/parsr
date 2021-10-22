@@ -81,11 +81,10 @@ struct parsr_node
 
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_node& node)
 	{
-		//<< "(child of " << ((node.parent) ? (node.parent->name.empty() ? "root" : node.parent->name) : "none") << ")"
 		stream << indent_n(node.indent) << "<" << node.name << node.attributes;
 		if (node.text.empty() && node.nodes.empty())
 		{
-			stream << "/>" << std::endl; // perhaps
+			stream << "/>" << std::endl; // < /> perhaps < ></ >
 		}
 		else
 		{
@@ -113,7 +112,7 @@ struct parsr_document
 
 	~parsr_document()
 	{
-		clear();
+		// clear();
 	}
 
 	void clear()
@@ -169,22 +168,69 @@ struct parsr_document
 		size_t a, b, c, d, e, f, g, h, i;
 		std::string x, y, z;
 
-		// [?]: throw ill-formed cases
-		// [?]: fill node with attributes if any
-		// [X]: check attribute uniqueness
-		// [X]: fill node text if any
-		// [X]: check only one root node
-
 		// ERROR = str.find(" ", x + 1, y - (x + 1)); any single character inside "" is [2]
 
-		std::list<size_t> tokens;
-		for (size_t i = 0; i < std::string::npos; i = str.find_first_of("</ =>", i + 1))
+		const size_t MAX_TOKENS = 100;
+		size_t tokens[MAX_TOKENS];
+		for (auto& i : tokens) i = std::string::npos;
+		size_t ii = 0;
+		for (size_t i = 0; i < std::string::npos && ii < MAX_TOKENS; i = str.find_first_of("</>", i + 1))
 		{
-			tokens.push_back(i);
+			tokens[ii++] = (i);
 		}
-
 		bool well_formed = true;
-		while (well_formed)
+		for (size_t i = 0; i < MAX_TOKENS && well_formed; ++i)
+		{
+			if (str[tokens[i]] == '<')
+			{
+				if (str[tokens[i + 1]] == '/')
+				{
+					if (str[tokens[i + 2]] == '>')
+					{
+						if (tokens[i + 1] == tokens[i] + 1)
+						{
+							if (node2append2->name == str.substr(tokens[i + 1], tokens[i + 2]))
+							{
+								//std::cout << "</ >" << std::endl;
+								node2append2 = node2append2->parent;
+								--indent;
+								++i;
+							}
+							else
+							{
+								well_formed = false;
+							}
+						}
+						else if (tokens[i + 1] == tokens[i + 2] - 1)
+						{
+							//std::cout << "< />" << std::endl;
+							node2append2->nodes.push_back({ node2append2,indent/*++*/,str.substr(tokens[i],tokens[i + 2]) });
+							++i;
+						}
+						else
+						{
+							well_formed = false;
+						}
+					}
+					else
+					{
+						well_formed = false;
+					}
+				}
+				if (str[tokens[i + 1]] == '>')
+				{
+					std::cout << "< >" << std::endl;
+					node2append2->nodes.push_back({ node2append2,indent++,str.substr(tokens[i],tokens[i + 1]) });
+					node2append2 = &node2append2->nodes.back();
+					++i;
+				}
+				else
+				{
+					well_formed = false;
+				}
+			}
+		}
+		while (well_formed && 0)
 		{
 			a = str.find("<", alpha);
 			if (well_formed = (a != omega))
@@ -290,7 +336,7 @@ struct parsr_document
 				alpha = a + 1;
 			}
 		}
-		std::cout << std::endl << node << std::endl;
+		std::cout << (well_formed ? "\x1B[32mwell_formed\033[0m" : "\x1B[31mill_formed\033[0m") << std::endl << node << std::endl;
 		// clear();
 		// paste
 

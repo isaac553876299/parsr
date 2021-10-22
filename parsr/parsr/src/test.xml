@@ -1,5 +1,5 @@
 <node>
-  <subnode a="0" b="1">
-    <subnode c="2"/>
+  <subnode>
+    <subnode/>
   </subnode>
 </node>
