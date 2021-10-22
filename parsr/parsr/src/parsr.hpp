@@ -96,7 +96,6 @@ struct parsr_node
 
 struct parsr_document
 {
-	std::string name;
 	parsr_node root;
 
 	parsr_document()
@@ -117,7 +116,6 @@ struct parsr_document
 
 	void clear()
 	{
-		name.clear();
 		root.clear();
 	}
 
@@ -125,35 +123,36 @@ struct parsr_document
 	{
 		auto start_clock = std::chrono::high_resolution_clock::now();
 
-		std::fstream file(file_name_path, std::ios::in); // could use ifstream // don't have to close()
+		std::fstream file(file_name_path, std::ios::in); // using ifstream needn't close()
 		if (!file.is_open())
 		{
+			std::cout << "error: open file" << std::endl;
 			return false;
 		}
 		std::string str, str2;
-		while (std::getline(file, str2)) str += str2;
+		while (std::getline(file, str2)) str += str2 += '\n';
 		/*std::stringstream sstream;
 		sstream << file.rdbuf();
 		std::string str = sstream.str();*/
 
-		auto finish_clock = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<float> elapsed = finish_clock - start_clock;
+		//auto finish_clock = std::chrono::high_resolution_clock::now();
+		//std::chrono::duration<float> elapsed = finish_clock - start_clock;
 
-		std::cout << std::endl << file_name_path << " (" << -1 << " bytes # " << elapsed.count() << " seconds)" << std::endl << str << std::endl << std::endl;
+		bool parsed = parse_string(str);
+		
+		std::cout << std::endl << "\x1B[34mfile \033[0m"<<file_name_path
+			<< (parsed ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m")
+			<< " (" << -1 << " \x1B[35mbytes\033[0m # "
+			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " \x1B[36mseconds\033[0m)" << std::endl
+			<< str << *this << std::endl;
 
-		if (parse_string(str))
-		{
-			name = file_name_path;
-			std::cout << *this << std::endl;
-			return true;
-		}
-
-		return false;
+		return parsed;
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_document& document)
 	{
-		return stream << std::endl << document.name << " (" << -1 << " bytes # " << -1 << " nodes # " << -1 << " attributes)" << std::endl << document.root << std::endl;
+		return stream << std::endl << "\x1B[33mdocument \033[0m(" << -1 << " \x1B[35mbytes\033[0m # " << -1
+			<< " \x1B[31mnodes\033[0m # " << -1 << " \x1B[31mattributes\033[0m)" << std::endl << document.root << std::endl;
 	}
 
 	bool parse_string(const std::string& str)
@@ -191,7 +190,7 @@ struct parsr_document
 						{
 							if (node2append2->name == str.substr(tokens[i + 1], tokens[i + 2]))
 							{
-								//std::cout << "</ >" << std::endl;
+								std::cout << "</ >" << std::endl;
 								node2append2 = node2append2->parent;
 								--indent;
 								++i;
@@ -203,7 +202,7 @@ struct parsr_document
 						}
 						else if (tokens[i + 1] == tokens[i + 2] - 1)
 						{
-							//std::cout << "< />" << std::endl;
+							std::cout << "< />" << std::endl;
 							node2append2->nodes.push_back({ node2append2,indent/*++*/,str.substr(tokens[i],tokens[i + 2]) });
 							++i;
 						}
@@ -230,115 +229,13 @@ struct parsr_document
 				}
 			}
 		}
-		while (well_formed && 0)
+		
+		well_formed = true;
+		if (well_formed)
 		{
-			a = str.find("<", alpha);
-			if (well_formed = (a != omega))
-			{
-				b = str.find(">", a + 1);
-				if (well_formed = (b != omega))
-				{
-					if (str[a + 1] == '/')
-					{
-						if (well_formed = (node2append2->name == str.substr(a + 2, b - (a + 2))))
-						{
-							node2append2 = node2append2->parent;
-							--indent;
-						}
-					}
-					else
-					{
-						if (0) {
-							c = str.find_first_of(">/ ", a + 1, b - (a + 1));
-							if (well_formed = (c != omega))
-							{
-								std::string x = str.substr(a + 1, c - (a + 1));
-								switch (str[c])
-								{
-								case '>':
-									node2append2->nodes.push_back({ node2append2,indent++,x });
-									node2append2 = &node2append2->nodes.back();
-									break;
-								case '/':
-									if (well_formed = (str[c + 1] == '>'))
-									{
-										node2append2->nodes.push_back({ node2append2,indent/*++*/,x });
-									}
-									break;
-								case ' ':
-									while (c != b/* && c < b*/)
-									{
-										c = str.find(' ', a + 1);
-										if (c != omega) if (c < b)
-										{
-											d = str.find('=', c + 1);
-											if (well_formed = (d != omega)) if (d < b)
-											{
-												e = str.find('\"', d + 1);
-												if (well_formed = (e != omega)) if (e < b)
-												{
-													f = str.find('\"', e + 1);
-													if (well_formed = (f != omega)) if (f < b)
-													{
-														node2append2->attributes.push_back({ str.substr(c + 1, d - (c + 1)), str.substr(e + 1, f - (e + 1)) });
-														c = f + 1;
-													}
-												}
-											}
-										}
-									}
-									break;
-								}
-							}
-						}
-
-						c = str.find(' ', a + 1);
-						if (c != omega) if (c < b)
-						{
-							node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1, c - (a + 1)) });
-							node2append2 = &node2append2->nodes.back();
-
-							d = str.find('=', c + 1);
-							if (well_formed = (d != omega)) if (d < b)
-							{
-								e = str.find('\"', d + 1);
-								if (well_formed = (e != omega)) if (e < b)
-								{
-									f = str.find('\"', e + 1);
-									if (well_formed = (f != omega)) if (f < b)
-									{
-										node2append2->attributes.push_back({ str.substr(c + 1, d - (c + 1)), str.substr(e + 1, f - (e + 1)) });
-									}
-								}
-							}
-
-							if (str[b - 1] == '/')
-							{
-								node2append2 = node2append2->parent;
-								--indent;
-							}
-						}
-						else
-						{
-							if (str[b - 1] == '/')
-							{
-								node2append2->nodes.push_back({ node2append2,indent/*++*/,str.substr(a + 1, b - (a + 2)) });
-							}
-							else
-							{
-								node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1, b - (a + 1)) });
-								node2append2 = &node2append2->nodes.back();
-							}
-						}
-					}
-					alpha = b + 1;
-				}
-				alpha = a + 1;
-			}
+			clear();
+			root = node;
 		}
-		std::cout << (well_formed ? "\x1B[32mwell_formed\033[0m" : "\x1B[31mill_formed\033[0m") << std::endl << node << std::endl;
-		// clear();
-		// paste
 
 		return true;
 	}
