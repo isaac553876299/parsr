@@ -1,15 +1,5 @@
 
 
-/*
-// https://www.w3schools.com/xml
-// https://www.tutorialspoint.com/xml/index.htm
-<?xml version = "1.0" encoding = "UTF-8" standalone = "no" ?>
-attributes either single or double quotes
-character entity references: (&lt; <)(&gt; >)(&amp; &)(&apos; ')(&quot; ")(&#number;)
-<!-- comment -->.
-<![CDATA[ ignored ]]>
-*/
-
 #ifndef PARSR
 #define PARSR
 
@@ -23,14 +13,9 @@ character entity references: (&lt; <)(&gt; >)(&amp; &)(&apos; ')(&quot; ")(&#num
 
 #
 
-const std::string indent_n(unsigned int n)
+const std::string indent_n(size_t n)
 {
-	std::string r;
-	for (unsigned int i = 0; i < n; ++i)
-	{
-		r += std::string(2, ' ');
-	}
-	return r;
+	return std::string(2 * n, ' ');
 }
 
 template<class T>
@@ -66,16 +51,16 @@ struct parsr_node
 	parsr_node* parent = nullptr;
 	unsigned int indent = 0;
 	std::string name;
-	std::string text;
 	std::list<parsr_attribute> attributes;
+	std::string text;
 	std::list<parsr_node> nodes;
 
 	void clear()
 	{
 		// parent?
 		name.clear();
-		text.clear();
 		attributes.clear();
+		text.clear();
 		nodes.clear();
 	}
 
@@ -163,11 +148,7 @@ struct parsr_document
 
 		size_t alpha = 0;
 		size_t omega = std::string::npos;
-
 		size_t a, b, c, d, e, f, g, h, i;
-		std::string x, y, z;
-
-		// ERROR = str.find(" ", x + 1, y - (x + 1)); any single character inside "" is [2]
 
 		const size_t MAX_TOKENS = 100;
 		size_t tokens[MAX_TOKENS];
@@ -178,8 +159,13 @@ struct parsr_document
 			tokens[ii++] = (i);
 		}
 		bool well_formed = true;
-		for (size_t i = 0; i < MAX_TOKENS && well_formed; ++i)
+		// TODO: tokens[i] != std::string::npos
+		for (size_t i = 0; i < MAX_TOKENS && tokens[i] != std::string::npos && well_formed; ++i)
 		{
+			std::cout << "--" << "[" << i << "][" << tokens[i] << "][" << str[tokens[i]] << "]";
+			std::cout << "--" << "[" << i + 1 << "][" << tokens[i + 1] << "][" << str[tokens[i + 1]] << "]";
+			std::cout << "--" << "[" << i + 2 << "][" << tokens[i + 2] << "][" << str[tokens[i + 2]] << "]";
+			std::cout << std::endl;
 			if (str[tokens[i]] == '<')
 			{
 				if (str[tokens[i + 1]] == '/')
@@ -188,26 +174,32 @@ struct parsr_document
 					{
 						if (tokens[i + 1] == tokens[i] + 1)
 						{
-							if (node2append2->name == str.substr(tokens[i + 1], tokens[i + 2]))
+							std::string x = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
+							if (node2append2->name == x)
 							{
 								std::cout << "</ >" << std::endl;
+								std::cout << x << std::endl;
 								node2append2 = node2append2->parent;
 								--indent;
-								++i;
+								i += 2;
 							}
 							else
 							{
+								std::cout << "ill </ >" << std::endl;
 								well_formed = false;
 							}
 						}
 						else if (tokens[i + 1] == tokens[i + 2] - 1)
 						{
 							std::cout << "< />" << std::endl;
-							node2append2->nodes.push_back({ node2append2,indent/*++*/,str.substr(tokens[i],tokens[i + 2]) });
-							++i;
+							std::string x = str.substr(tokens[i] + 1, tokens[i + 2] - 1 - (tokens[i] + 1));
+							std::cout << x << std::endl;
+							node2append2->nodes.push_back({ node2append2,indent/*++*/,x });
+							i += 2;
 						}
 						else
 						{
+							std::cout << "ill < />" << std::endl;
 							well_formed = false;
 						}
 					}
@@ -216,15 +208,18 @@ struct parsr_document
 						well_formed = false;
 					}
 				}
-				if (str[tokens[i + 1]] == '>')
+				else if (str[tokens[i + 1]] == '>')
 				{
 					std::cout << "< >" << std::endl;
-					node2append2->nodes.push_back({ node2append2,indent++,str.substr(tokens[i],tokens[i + 1]) });
+					std::string x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
+					std::cout << x << std::endl;
+					node2append2->nodes.push_back({ node2append2,indent++,x });
 					node2append2 = &node2append2->nodes.back();
 					++i;
 				}
 				else
 				{
+					std::cout << "ill < >" << std::endl;
 					well_formed = false;
 				}
 			}
