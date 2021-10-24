@@ -125,7 +125,7 @@ struct parsr_document
 
 		bool parsed = parse_string(str);
 		
-		std::cout << std::endl << "\x1B[34mfile \033[0m"<<file_name_path
+		std::cout << std::endl << "\x1B[34mfile \033[0m" << file_name_path
 			<< (parsed ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m")
 			<< " (" << -1 << " \x1B[35mbytes\033[0m # "
 			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " \x1B[36mseconds\033[0m)" << std::endl
@@ -136,8 +136,12 @@ struct parsr_document
 
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_document& document)
 	{
-		return stream << std::endl << "\x1B[33mdocument \033[0m(" << -1 << " \x1B[35mbytes\033[0m # " << -1
-			<< " \x1B[31mnodes\033[0m # " << -1 << " \x1B[31mattributes\033[0m)" << std::endl << document.root << std::endl;
+		return stream
+			<< std::endl << "\x1B[33mdocument \033[0m("
+			<< -1 << " \x1B[35mbytes\033[0m # "
+			<< -1 << " \x1B[31mnodes\033[0m # "
+			<< -1 << " \x1B[31mattributes\033[0m)"
+			<< std::endl << document.root << std::endl;
 	}
 
 	bool parse_string(const std::string& str)
@@ -146,26 +150,19 @@ struct parsr_document
 		parsr_node* node2append2 = &node;
 		unsigned int indent = 1;
 
-		size_t alpha = 0;
-		size_t omega = std::string::npos;
-		size_t a, b, c, d, e, f, g, h, i;
-
 		const size_t MAX_TOKENS = 100;
 		size_t tokens[MAX_TOKENS];
 		for (auto& i : tokens) i = std::string::npos;
 		size_t ii = 0;
-		for (size_t i = 0; i < std::string::npos && ii < MAX_TOKENS; i = str.find_first_of("</>", i + 1))
+		for (size_t i = 0; i < std::string::npos && ii < MAX_TOKENS; i = str.find_first_of("</ =\">", i + 1))
 		{
-			tokens[ii++] = (i);
+			tokens[ii++] = (i); std::cout << " " << i << "[" << str[i] << "]"; if (ii % 11 == 0) std::cout << std::endl;
 		}
+		std::cout << " #tokens#" << std::endl;
 		bool well_formed = true;
 		// TODO: tokens[i] != std::string::npos
 		for (size_t i = 0; i < MAX_TOKENS && tokens[i] != std::string::npos && well_formed; ++i)
 		{
-			std::cout << "--" << "[" << i << "][" << tokens[i] << "][" << str[tokens[i]] << "]";
-			std::cout << "--" << "[" << i + 1 << "][" << tokens[i + 1] << "][" << str[tokens[i + 1]] << "]";
-			std::cout << "--" << "[" << i + 2 << "][" << tokens[i + 2] << "][" << str[tokens[i + 2]] << "]";
-			std::cout << std::endl;
 			if (str[tokens[i]] == '<')
 			{
 				if (str[tokens[i + 1]] == '/')
@@ -177,8 +174,7 @@ struct parsr_document
 							std::string x = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
 							if (node2append2->name == x)
 							{
-								std::cout << "</ >" << std::endl;
-								std::cout << x << std::endl;
+								std::cout << "</ > #" << x << "#" << std::endl;
 								node2append2 = node2append2->parent;
 								--indent;
 								i += 2;
@@ -191,9 +187,8 @@ struct parsr_document
 						}
 						else if (tokens[i + 1] == tokens[i + 2] - 1)
 						{
-							std::cout << "< />" << std::endl;
 							std::string x = str.substr(tokens[i] + 1, tokens[i + 2] - 1 - (tokens[i] + 1));
-							std::cout << x << std::endl;
+							std::cout << "< /> #" << x << "#" << std::endl;
 							node2append2->nodes.push_back({ node2append2,indent/*++*/,x });
 							i += 2;
 						}
@@ -210,12 +205,27 @@ struct parsr_document
 				}
 				else if (str[tokens[i + 1]] == '>')
 				{
-					std::cout << "< >" << std::endl;
 					std::string x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
-					std::cout << x << std::endl;
+					std::cout << "< > #" << x << "#" << std::endl;
 					node2append2->nodes.push_back({ node2append2,indent++,x });
 					node2append2 = &node2append2->nodes.back();
 					++i;
+				}
+				else if (str[tokens[i + 1]] == ' ' && str[tokens[i + 2]] == '=')
+				{
+					if (str[tokens[i + 3]] == '\"' && str[tokens[i + 4]] == '\"')
+					{
+						std::string x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
+						std::cout << "< > #" << x << "#" << std::endl;
+						node2append2->nodes.push_back({ node2append2,indent++,x });
+						node2append2 = &node2append2->nodes.back();
+						std::string n = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
+						std::cout << "= #" << n << "#" << std::endl;
+						std::string v = str.substr(tokens[i + 3] + 1, tokens[i + 4] - (tokens[i + 3] + 1));
+						std::cout << "\"\" #" << v << "#" << std::endl;
+						node2append2->attributes.push_back({ n,v });
+						++i;
+					}
 				}
 				else
 				{
