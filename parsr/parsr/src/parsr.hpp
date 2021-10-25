@@ -156,9 +156,9 @@ struct parsr_document
 		size_t ii = 0;
 		for (size_t i = 0; i < std::string::npos && ii < MAX_TOKENS; i = str.find_first_of("</ =\">", i + 1))
 		{
-			tokens[ii++] = (i); std::cout << " " << i << "[" << str[i] << "]"; if (ii % 11 == 0) std::cout << std::endl;
+			tokens[ii++] = (i); printf("%9d [%c]\n", i, str[i]);
 		}
-		std::cout << " #tokens#" << std::endl;
+		std::cout << std::string(9, '-') << " tokens " << std::string(9, '-') << std::endl;
 		bool well_formed = true;
 		// TODO: tokens[i] != std::string::npos
 		for (size_t i = 0; i < MAX_TOKENS && tokens[i] != std::string::npos && well_formed; ++i)
@@ -211,20 +211,34 @@ struct parsr_document
 					node2append2 = &node2append2->nodes.back();
 					++i;
 				}
-				else if (str[tokens[i + 1]] == ' ' && str[tokens[i + 2]] == '=')
+				else if (str[tokens[i + 1]] == ' ')
 				{
-					if (str[tokens[i + 3]] == '\"' && str[tokens[i + 4]] == '\"')
+					std::string x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
+					std::cout << "< > #" << x << "#" << std::endl;
+					node2append2->nodes.push_back({ node2append2,indent++,x });
+					node2append2 = &node2append2->nodes.back();
+					while (str[tokens[i + 1]] == ' ')
 					{
-						std::string x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
-						std::cout << "< > #" << x << "#" << std::endl;
-						node2append2->nodes.push_back({ node2append2,indent++,x });
-						node2append2 = &node2append2->nodes.back();
-						std::string n = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
-						std::cout << "= #" << n << "#" << std::endl;
-						std::string v = str.substr(tokens[i + 3] + 1, tokens[i + 4] - (tokens[i + 3] + 1));
-						std::cout << "\"\" #" << v << "#" << std::endl;
-						node2append2->attributes.push_back({ n,v });
-						++i;
+						if (str[tokens[i + 2]] == '=' && str[tokens[i + 3]] == '\"' && str[tokens[i + 4]] == '\"')
+						{
+							std::string n = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
+							std::cout << "= #" << n << "#" << std::endl;
+							std::string v = str.substr(tokens[i + 3] + 1, tokens[i + 4] - (tokens[i + 3] + 1));
+							std::cout << "\"\" #" << v << "#" << std::endl;
+							node2append2->attributes.push_back({ n,v });
+							i += 4;
+						}
+					}
+					if (str[tokens[i + 1]] == '/')
+					{
+						if (str[tokens[i + 2]] == '>')
+						{
+							std::string x = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
+							std::cout << "< /> #" << x << "#" << std::endl;
+							node2append2 = node2append2->parent;
+							--indent;
+							i += 2;
+						}
 					}
 				}
 				else
