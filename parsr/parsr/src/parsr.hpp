@@ -146,6 +146,11 @@ struct parsr_document
 
 	bool parse_string(const std::string& str)
 	{
+		// throw ill_formed
+		// unique attributes
+		// single root
+		// check find methods ""''[2]
+
 		parsr_node node;
 		parsr_node* node2append2 = &node;
 		unsigned int indent = 1;
@@ -156,9 +161,9 @@ struct parsr_document
 		size_t ii = 0;
 		for (size_t i = 0; i < std::string::npos && ii < MAX_TOKENS; i = str.find_first_of("</ =\">", i + 1))
 		{
-			tokens[ii++] = (i); printf("%9d [%c]\n", i, str[i]);
+			tokens[ii++] = (i); printf("%9d [%c]", i, str[i]); if (ii % 5 == 0) std::cout << std::endl;
 		}
-		std::cout << std::string(9, '-') << " tokens " << std::string(9, '-') << std::endl;
+		std::cout << std::endl << std::string(9, '-') << " tokens " << std::string(9, '-') << std::endl;
 		bool well_formed = true;
 		// TODO: tokens[i] != std::string::npos
 		for (size_t i = 0; i < MAX_TOKENS && tokens[i] != std::string::npos && well_formed; ++i)
@@ -222,9 +227,8 @@ struct parsr_document
 						if (str[tokens[i + 2]] == '=' && str[tokens[i + 3]] == '\"' && str[tokens[i + 4]] == '\"')
 						{
 							std::string n = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
-							std::cout << "= #" << n << "#" << std::endl;
 							std::string v = str.substr(tokens[i + 3] + 1, tokens[i + 4] - (tokens[i + 3] + 1));
-							std::cout << "\"\" #" << v << "#" << std::endl;
+							std::cout << "= #" << n << "# \"\" #" << v << "#" << std::endl;
 							node2append2->attributes.push_back({ n,v });
 							i += 4;
 						}
