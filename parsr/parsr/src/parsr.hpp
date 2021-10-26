@@ -190,7 +190,7 @@ struct parsr_document
 			<< document.count_nodes() << " \x1B[31mnodes\033[0m # "
 			<< document.count_attributes() << " \x1B[31mattributes\033[0m)"
 			<< std::endl << (char)(200) << std::string(sizeof("document") - 1, 205) << (char)(188)
-			<< std::endl /*<< document.root */<< std::endl;
+			<< std::endl << document.root << std::endl;
 	}
 
 	bool parse_string(const std::string& str)
@@ -200,7 +200,7 @@ struct parsr_document
 		// single root
 		// check find methods ""''[2]
 
-		bool debug = false;
+		bool debug = true;
 
 		parsr_node node;
 		parsr_node* node2append2 = &node;
@@ -216,9 +216,74 @@ struct parsr_document
 		}
 		if (debug) std::cout << std::endl << std::string(9, '-') << " tokens " << std::string(9, '-') << std::endl;
 
+		std::string x, y, z;
+
 		bool well_formed = true;
 		for (size_t i = 0; i < MAX_TOKENS && tokens[i] != std::string::npos && well_formed; ++i)
 		{
+			if (str[tokens[i]] == '<')
+			{
+				switch (str[tokens[i + 1]])
+				{
+				case '>':
+					x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
+					if (debug) std::cout << "< > #" << x << "#" << std::endl;
+					node2append2->nodes.push_back({ node2append2,indent++,x });
+					node2append2 = &node2append2->nodes.back();
+					++i;
+					break;
+				case '/':
+					if (str[tokens[i + 2]] == '>')
+					{
+						if (tokens[i + 1] == tokens[i + 2] - 1)
+						{
+							x = str.substr(tokens[i] + 1, tokens[i + 2] - 1 - (tokens[i] + 1));
+							if (debug) std::cout << "< /> #" << x << "#" << std::endl;
+							node2append2->nodes.push_back({ node2append2,indent/*++*/,x });
+							i += 2;
+						}
+						else if (tokens[i + 1] == tokens[i] + 1)
+						{
+							x = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
+							if (node2append2->name == x)
+							{
+								if (debug) std::cout << "</ > #" << x << "#" << std::endl;
+								node2append2 = node2append2->parent;
+								--indent;
+								i += 2;
+							}
+						}
+					}
+					//elseif ' '
+					else
+					{
+						well_formed = false;
+					}
+					break;
+				case ' ':
+					x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
+					if (debug) std::cout << "< > #" << x << "#" << std::endl;
+					node2append2->nodes.push_back({ node2append2,indent++,x });
+					node2append2 = &node2append2->nodes.back();
+					while (str[tokens[i + 1]] == ' ')
+					{
+						if (str[tokens[i + 2]] == '=' && str[tokens[i + 3]] == '\"' && str[tokens[i + 4]] == '\"')
+						{
+							y = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
+							z = str.substr(tokens[i + 3] + 1, tokens[i + 4] - (tokens[i + 3] + 1));
+							if (debug) std::cout << "= #" << y << "# \"\" #" << z << "#" << std::endl;
+							node2append2->attributes.push_back({ y,z });
+							i += 4;
+						}
+					}
+					//elseif '/'
+					break;
+				default:
+					well_formed = false;
+					break;
+				}
+			}
+
 			if (str[tokens[i]] == '<')
 			{
 				if (str[tokens[i + 1]] == '/')
