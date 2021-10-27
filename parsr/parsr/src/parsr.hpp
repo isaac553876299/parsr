@@ -233,8 +233,9 @@ struct parsr_document
 					++i;
 					break;
 				case '/':
-					if (str[tokens[i + 2]] == '>')
+					switch (str[tokens[i + 2]])
 					{
+					case '>':
 						if (tokens[i + 1] == tokens[i + 2] - 1)
 						{
 							x = str.substr(tokens[i] + 1, tokens[i + 2] - 1 - (tokens[i] + 1));
@@ -253,13 +254,14 @@ struct parsr_document
 								i += 2;
 							}
 						}
-					}
-					//elseif ' '
-					else
-					{
+						break;
+					case ' ':
+
+						break;
+					default:
 						well_formed = false;
+						break;
 					}
-					break;
 				case ' ':
 					x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
 					if (debug) std::cout << "< > #" << x << "#" << std::endl;
@@ -276,7 +278,6 @@ struct parsr_document
 							i += 4;
 						}
 					}
-					//elseif '/'
 					break;
 				default:
 					well_formed = false;
