@@ -7,6 +7,9 @@ int main()
 		test.load("src/test.xml");
 		system("pause");
 		system("cls");
+		test.save("src/test.xml");
+		system("pause");
+		system("cls");
 	}
 	return 0;
 }

@@ -42,9 +42,22 @@ struct parsr_attribute
 		return r;
 	}
 
+	std::string to_string() const
+	{
+		std::string str;
+
+		str += " ";
+		str += name;
+		str += "=\"";
+		str += value;
+		str += "\"";
+
+		return str;
+	}
+
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_attribute& attribute)
 	{
-		return stream << " " << attribute.name << "=\"" << attribute.value << "\"";
+		return stream << attribute.to_string();
 	}
 };
 
@@ -94,18 +107,47 @@ struct parsr_node
 		return r;
 	}
 
-	friend std::ostream& operator<< (std::ostream& stream, const parsr_node& node)
+	std::string to_string() const
 	{
-		stream << std::string(node.indent * 2, ' ') << "<" << node.name << node.attributes;
-		if (node.text.empty() && node.nodes.empty())
+		std::string str;
+		
+		str += std::string(indent * 2, ' ');
+		str += "<";
+		str += name;
+		for (auto& a : attributes)
 		{
-			stream << "/>" << std::endl; // < /> perhaps < ></ >
+			str += a.to_string();
+		}
+		if (text.empty() && nodes.empty())
+		{
+			str += "/>";// < /> perhaps < ></ >
 		}
 		else
 		{
-			stream << ">" << node.text << std::endl << node.nodes << std::string(node.indent * 2, ' ') << "</" << node.name << ">" << std::endl;
+			str += ">";
+			str += "\n";
+			if (!text.empty())
+			{
+				str += text;
+				str += "\n";
+			}
+			for (auto& n : nodes)
+			{
+				str += n.to_string();
+			}
+			str += std::string(indent * 2, ' ');
+			str += "</";
+			str += name;
+			str += ">";
 		}
-		return stream;
+		str += "\n";
+
+		return str;
+	}
+
+	friend std::ostream& operator<< (std::ostream& stream, const parsr_node& node)
+	{
+		return stream << node.to_string();
 	}
 };
 
@@ -169,15 +211,43 @@ struct parsr_document
 		/*std::stringstream sstream;
 		sstream << file.rdbuf();
 		std::string str = sstream.str();*/
+		file.close();
 
 		bool parsed = parse_string(str);
 		
-		std::cout << std::endl << (char)(201) << "\x1B[34mfile\033[0m" << (char)(187) << " " << file_name_path
+		std::cout << std::endl << "loaded \x1B[35mfile\033[0m" << " " << file_name_path
 			<< (parsed ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m")
-			<< " (" << (str.capacity()) << " \x1B[35mbytes\033[0m # "
-			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " \x1B[36mseconds\033[0m)" << std::endl
-			<< (char)(200) << std::string(sizeof("file") - 1, 205) << (char)(188) << std::endl
-			/*<< str */ << *this << std::endl;
+			<< " (" << (str.capacity()) << " bytes # "
+			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl
+			<< str << *this << std::endl;
+
+		return parsed;
+	}
+
+	bool save(const std::string file_name_path)
+	{
+		auto start_clock = std::chrono::high_resolution_clock::now();
+
+		std::fstream file(file_name_path, std::ios::out | std::ios::trunc);
+		if (!file.is_open())
+		{
+			std::cout << "error: open file" << std::endl;
+			return false;
+		}
+
+		std::string str = root.to_string();
+
+		bool parsed = !str.empty();
+		if (parsed)
+		{
+			file << str;
+		}
+		file.close();//ofstream?
+
+		std::cout << std::endl << "saved \x1B[35mfile\033[0m" << " " << file_name_path
+			<< " (" << (str.capacity()) << " bytes # "
+			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl
+			<< str << std::endl;
 
 		return parsed;
 	}
@@ -185,11 +255,10 @@ struct parsr_document
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_document& document)
 	{
 		return stream
-			<< std::endl << (char)(201) << "\x1B[33mdocument\033[0m" << (char)(187) << " ("
-			<< document.size() << " \x1B[35mbytes\033[0m # "
-			<< document.count_nodes() << " \x1B[31mnodes\033[0m # "
-			<< document.count_attributes() << " \x1B[31mattributes\033[0m)"
-			<< std::endl << (char)(200) << std::string(sizeof("document") - 1, 205) << (char)(188)
+			<< std::endl << "\x1B[33mdocument\033[0m" << " ("
+			<< document.size() << " bytes # "
+			<< document.count_nodes() << " nodes # "
+			<< document.count_attributes() << " attributes)"
 			<< std::endl << document.root << std::endl;
 	}
 
@@ -212,7 +281,7 @@ struct parsr_document
 		size_t ii = 0;
 		for (size_t i = 0; i < std::string::npos && ii < MAX_TOKENS; i = str.find_first_of("</ =\">", i + 1))
 		{
-			tokens[ii++] = (i); if (debug) printf("%9d [%c]", i, str[i]); if (debug) if (ii % 5 == 0) std::cout << std::endl;
+			tokens[ii++] = (i); if (debug) printf(" %d[%c]", i, str[i]);
 		}
 		if (debug) std::cout << std::endl << std::string(9, '-') << " tokens " << std::string(9, '-') << std::endl;
 
@@ -221,80 +290,7 @@ struct parsr_document
 		bool well_formed = true;
 		for (size_t i = 0; i < MAX_TOKENS && tokens[i] != std::string::npos && well_formed; ++i)
 		{
-			switch (str[tokens[i]])
-			{
-			case '<':
-
-				break;
-			case '>':
-
-				break;
-			case '/':
-
-				break;
-			case ' ':
-
-				break;
-			default:
-
-				break;
-			}
-			if (1 && str[tokens[i]] == '<')
-			{
-				x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
-				if (debug) std::cout << "< #" << x << "#" << std::endl;
-				node2append2->nodes.push_back({ node2append2,indent++,x });
-				node2append2 = &node2append2->nodes.back();
-				well_formed = false;
-				if (str[tokens[i + 1]] == '>')
-				{
-					if (debug) std::cout << "> #" << x << "#" << std::endl;
-					well_formed = true;
-					//++i;
-				}
-				if (str[tokens[i + 1]] == '/')
-				{
-					if (str[tokens[i + 2]] == '>')
-					{
-						well_formed = false;
-						if (tokens[i + 1] == tokens[i + 2] - 1)
-						{
-							if (debug) std::cout << "/> #" << x << "#" << std::endl;
-							node2append2 = node2append2->parent;
-							node2append2->nodes.back().indent -= 1;
-							well_formed = true;
-						}
-						else if (tokens[i + 1] == tokens[i] + 1)
-						{
-							x = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
-							if (node2append2->name == x)
-							{
-								if (debug) std::cout << "</ #" << x << "#" << std::endl;
-								node2append2 = node2append2->parent;
-								--indent;
-								well_formed = true;
-							}
-						}
-						i += 2;
-					}
-				}
-				while (str[tokens[i + 1]] == ' ')
-				{
-					well_formed = false;
-					if (str[tokens[i + 2]] == '=' && str[tokens[i + 3]] == '\"' && str[tokens[i + 4]] == '\"')
-					{
-						y = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
-						z = str.substr(tokens[i + 3] + 1, tokens[i + 4] - (tokens[i + 3] + 1));
-						if (debug) std::cout << "= #" << y << "# \"\" #" << z << "#" << std::endl;
-						node2append2->attributes.push_back({ y,z });
-						i += 3;//3?
-						well_formed = true;
-					}
-					++i;
-				}
-			}
-
-			if (0 && str[tokens[i]] == '<')
+			if (str[tokens[i]] == '<')
 			{
 				if (str[tokens[i + 1]] == '/')
 				{
@@ -378,7 +374,7 @@ struct parsr_document
 				}
 			}
 		}
-		
+
 		if (well_formed)
 		{
 			clear();
