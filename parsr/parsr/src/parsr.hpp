@@ -196,7 +196,7 @@ struct parsr_document
 		return r;
 	}
 
-	bool load(const std::string file_name_path)
+	bool load(const std::string file_name_path, const bool debug_info = false)
 	{
 		auto start_clock = std::chrono::high_resolution_clock::now();
 
@@ -213,18 +213,21 @@ struct parsr_document
 		std::string str = sstream.str();*/
 		file.close();
 
-		bool parsed = parse_string(str);
+		bool parsed = parse_string(str, debug_info);
 		
-		std::cout << std::endl << "loaded \x1B[35mfile\033[0m" << " " << file_name_path
+		std::cout << std::endl << "\x1B[34mload\033[0m " << file_name_path
 			<< (parsed ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m")
 			<< " (" << (str.capacity()) << " bytes # "
-			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl
-			<< str << *this << std::endl;
+			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl;
+		if (debug_info)
+		{
+			std::cout << str << *this << std::endl;
+		}
 
 		return parsed;
 	}
 
-	bool save(const std::string file_name_path)
+	bool save(const std::string file_name_path, const bool debug_info = false)
 	{
 		auto start_clock = std::chrono::high_resolution_clock::now();
 
@@ -244,10 +247,13 @@ struct parsr_document
 		}
 		file.close();//ofstream?
 
-		std::cout << std::endl << "saved \x1B[35mfile\033[0m" << " " << file_name_path
+		std::cout << std::endl << "\x1B[36msave\033[0m " << file_name_path
 			<< " (" << (str.capacity()) << " bytes # "
-			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl
-			<< str << std::endl;
+			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl;
+		if (debug_info)
+		{
+			std::cout << str << std::endl;
+		}
 
 		return parsed;
 	}
@@ -262,18 +268,17 @@ struct parsr_document
 			<< std::endl << document.root << std::endl;
 	}
 
-	bool parse_string(const std::string& str)
+	bool parse_string(const std::string& str, const bool debug_info = false)
 	{
 		// throw ill_formed
 		// unique attributes
 		// single root
 		// check find methods ""''[2]
-
-		bool debug = true;
+		// find text
 
 		parsr_node node;
 		parsr_node* node2append2 = &node;
-		unsigned int indent = 1;
+		unsigned int indent = 0;
 
 		const size_t MAX_TOKENS = 4096;
 		size_t tokens[MAX_TOKENS];
@@ -281,9 +286,9 @@ struct parsr_document
 		size_t ii = 0;
 		for (size_t i = 0; i < std::string::npos && ii < MAX_TOKENS; i = str.find_first_of("</ =\">", i + 1))
 		{
-			tokens[ii++] = (i); if (debug) printf(" %d[%c]", i, str[i]);
+			tokens[ii++] = (i); if (debug_info) printf(" %d[%c]", i, str[i]);
 		}
-		if (debug) std::cout << std::endl << std::string(9, '-') << " tokens " << std::string(9, '-') << std::endl;
+		if (debug_info) std::cout << std::endl << std::string(9, '-') << " \x1B[35mtokens\033[0m " << std::string(9, '-') << std::endl;
 
 		std::string x, y, z;
 
@@ -301,27 +306,27 @@ struct parsr_document
 							std::string x = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
 							if (node2append2->name == x)
 							{
-								if (debug) std::cout << "</ > #" << x << "#" << std::endl;
+								if (debug_info) std::cout << "</ > #" << x << "#" << std::endl;
 								node2append2 = node2append2->parent;
 								--indent;
 								i += 2;
 							}
 							else
 							{
-								if (debug) std::cout << "ill </ >" << std::endl;
+								if (debug_info) std::cout << "ill </ >" << std::endl;
 								well_formed = false;
 							}
 						}
 						else if (tokens[i + 1] == tokens[i + 2] - 1)
 						{
 							std::string x = str.substr(tokens[i] + 1, tokens[i + 2] - 1 - (tokens[i] + 1));
-							if (debug) std::cout << "< /> #" << x << "#" << std::endl;
+							if (debug_info) std::cout << "< /> #" << x << "#" << std::endl;
 							node2append2->nodes.push_back({ node2append2,indent/*++*/,x });
 							i += 2;
 						}
 						else
 						{
-							if (debug) std::cout << "ill < />" << std::endl;
+							if (debug_info) std::cout << "ill < />" << std::endl;
 							well_formed = false;
 						}
 					}
@@ -333,7 +338,7 @@ struct parsr_document
 				else if (str[tokens[i + 1]] == '>')
 				{
 					std::string x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
-					if (debug) std::cout << "< > #" << x << "#" << std::endl;
+					if (debug_info) std::cout << "< > #" << x << "#" << std::endl;
 					node2append2->nodes.push_back({ node2append2,indent++,x });
 					node2append2 = &node2append2->nodes.back();
 					++i;
@@ -341,7 +346,7 @@ struct parsr_document
 				else if (str[tokens[i + 1]] == ' ')
 				{
 					std::string x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
-					if (debug) std::cout << "< > #" << x << "#" << std::endl;
+					if (debug_info) std::cout << "< > #" << x << "#" << std::endl;
 					node2append2->nodes.push_back({ node2append2,indent++,x });
 					node2append2 = &node2append2->nodes.back();
 					while (str[tokens[i + 1]] == ' ')
@@ -350,7 +355,7 @@ struct parsr_document
 						{
 							std::string n = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
 							std::string v = str.substr(tokens[i + 3] + 1, tokens[i + 4] - (tokens[i + 3] + 1));
-							if (debug) std::cout << "= #" << n << "# \"\" #" << v << "#" << std::endl;
+							if (debug_info) std::cout << "= #" << n << "# \"\" #" << v << "#" << std::endl;
 							node2append2->attributes.push_back({ n,v });
 							i += 4;
 						}
@@ -360,7 +365,7 @@ struct parsr_document
 						if (str[tokens[i + 2]] == '>')
 						{
 							std::string x = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
-							if (debug) std::cout << "< /> #" << x << "#" << std::endl;
+							if (debug_info) std::cout << "< /> #" << x << "#" << std::endl;
 							node2append2 = node2append2->parent;
 							--indent;
 							i += 2;
@@ -369,7 +374,7 @@ struct parsr_document
 				}
 				else
 				{
-					if (debug) std::cout << "ill < >" << std::endl;
+					if (debug_info) std::cout << "ill < >" << std::endl;
 					well_formed = false;
 				}
 			}
@@ -378,7 +383,7 @@ struct parsr_document
 		if (well_formed)
 		{
 			clear();
-			root = node;
+			root = node.nodes.front();
 		}
 
 		return well_formed;

@@ -4,10 +4,9 @@ int main()
 	parsr_document test;
 	while (1)
 	{
-		test.load("src/test.xml");
+		test.load("src/test.xml", true);
 		system("pause");
-		system("cls");
-		test.save("src/test.xml");
+		test.save("src/test.xml", true);
 		system("pause");
 		system("cls");
 	}
