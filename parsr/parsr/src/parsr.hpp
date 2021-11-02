@@ -59,6 +59,28 @@ struct parsr_attribute
 	{
 		return stream << attribute.to_string();
 	}
+
+	int to_int() const
+	{
+		int r = 0;
+		std::stringstream s(value);
+		s >> r;
+		return r;
+	}
+	float to_float() const
+	{
+		float r = 0;
+		std::stringstream s(value);
+		s >> r;
+		return r;
+	}
+	bool to_bool() const
+	{
+		bool r = 0;
+		std::stringstream s(value);
+		s >> r;
+		return r;
+	}
 };
 
 struct parsr_node
@@ -148,6 +170,29 @@ struct parsr_node
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_node& node)
 	{
 		return stream << node.to_string();
+	}
+
+	const parsr_node* child(std::string tag) const
+	{
+		for (const auto& i : nodes)
+		{
+			if (i.name == tag)
+			{
+				return &i;
+			}
+		}
+		return 0;
+	}
+	const parsr_attribute* attribute(std::string tag) const
+	{
+		for (const auto& i : attributes)
+		{
+			if (i.name == tag)
+			{
+				return &i;
+			}
+		}
+		return 0;
 	}
 };
 
