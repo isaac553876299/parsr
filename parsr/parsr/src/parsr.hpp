@@ -425,6 +425,51 @@ struct parsr_document
 			}
 		}
 
+		well_formed = true;
+		node.clear();
+		node2append2 = &node;
+		parsr_node* original = &node;
+		size_t alpha = 0;
+		while (1)
+		{
+			if (size_t a = str.find_first_of("<", alpha) != std::string::npos)
+			{
+				if (size_t b = str.find_first_of(">", a + 1) != std::string::npos)
+				{
+					for (size_t c = a + 1; c != std::string::npos && c < b; c = str.find_first_of(" ", c + 1))
+					{
+						if (size_t d = str.find_first_of("=", c + 1) != std::string::npos)
+						{
+							if (size_t e = str.find_first_of("\"", d + 1) != std::string::npos)
+							{
+								if (size_t f = str.find_first_of("\"", e + 1) != std::string::npos)
+								{
+									node2append2->attributes.push_back({ str.substr(c + 1,d - 1 - (c + 1)),str.substr(e + 1,f - 1 - (e + 1)) });
+								}
+							}
+						}
+					}
+					{
+						if (str[b - 1] == '/' && str[a + 1] != '/')
+						{
+							node2append2->nodes.push_back({ node2append2,0,str.substr(a + 1,b - 2) });
+						}
+						/*else*/if (str[a + 1] == '/' && str[b - 1] != '/')
+						{
+							if (node2append2->name == str.substr(a + 2, b - 1))
+							{
+							}
+						}
+						else
+						{
+							node2append2->nodes.push_back({ node2append2,0,str.substr(a + 1,b - 1) });
+							node2append2 = &node2append2->nodes.back();
+						}
+					}
+				}
+			}
+		}
+
 		if (well_formed)
 		{
 			clear();
