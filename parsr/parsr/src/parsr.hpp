@@ -441,7 +441,7 @@ struct parsr_document
 			}
 		}
 
-		well_formed = false;
+		well_formed = true;
 		size_t cursor = 0;
 		size_t a, b, c, d, e, f;
 
@@ -461,9 +461,9 @@ struct parsr_document
 					}
 					else
 					{
-						std::cout << std::endl << "#" << str.substr(a + 1, b - 1) << std::endl;
-						node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1,b - 1) });
+						node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1,b - 0 - (a + 1)) });
 						node2append2 = &node2append2->nodes.back();
+						std::cout << "#" << node2append2->name << "#" << std::endl;
 						for (c = str.find_first_of(" ", a + 1); c != std::string::npos && c < b; c = str.find_first_of(" ", c + 1))
 						{
 							if ((d = str.find_first_of("=", c + 1)) != std::string::npos)
@@ -472,32 +472,32 @@ struct parsr_document
 								{
 									if ((f = str.find_first_of("\"", e + 1)) != std::string::npos)
 									{
-										node2append2->attributes.push_back({ str.substr(c + 1,d - 0/*1?*/ - (c + 1)),str.substr(e + 1,f - 1 - (e + 1)) });
-										std::cout << "#" << node2append2->attributes.back() << std::endl;
+										node2append2->attributes.push_back({ str.substr(c + 1,d - 0 - (c + 1)),str.substr(e + 1,f - 0 - (e + 1)) });
+										std::cout << "#" << node2append2->attributes.back() << "#" << std::endl;
 									}
 								}
 							}
 						}
 						if (!node2append2->attributes.empty())
 						{
-							node2append2->name = str.substr(a + 1, str.find_first_of(" ", a + 1) - 1 - (a + 1));
-							std::cout << "#" << node2append2->name << std::endl;
+							node2append2->name = str.substr(a + 1, str.find_first_of(" ", a + 1) - 0 - (a + 1));
+							std::cout << "#" << node2append2->name << "#" << std::endl;
 						}
 						if (str[b - 1] == '/'/*&& str[a + 1] != '/'*/)
 						{
-							node2append2 = node2append2->parent;
 							if (node2append2->attributes.empty())
 							{
+								std::cout << "#" << node2append2->name << "#" << std::endl;
 								node2append2->name.pop_back();
+								std::cout << "#" << node2append2->name << "#" << std::endl;
 							}
+							node2append2 = node2append2->parent;
 							--indent;
 						}
 					}
 				}
 			}
 		}
-		
-		std::cout << node.nodes.front() << std::endl;
 
 		if (well_formed)
 		{
