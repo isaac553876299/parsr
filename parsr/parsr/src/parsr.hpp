@@ -13,13 +13,12 @@
 
 #
 
-/*
-<node>
-  <subnode one="1" two="1.99">
-	<subsubnode/>
-  </subnode>
-</node>
-*/
+const std::string test =
+"<node>\n"
+"  <subnode one=\"1\" two=\"1.99\">\n"
+"    <subsubnode/>\n"
+"  </subnode>\n"
+"</node>\n";
 
 constexpr const char* colors[] =
 {
@@ -282,7 +281,7 @@ struct parsr_document
 			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl;
 		if (debug_info)
 		{
-			std::cout << str << *this << std::endl;
+			std::cout << str << *this;
 		}
 
 		return parsed;
@@ -308,7 +307,7 @@ struct parsr_document
 		}
 		file.close();//ofstream?
 
-		std::cout << "\n\x1B[36msave\033[0m " << file_name_path << " (" << (str.size()) << " bytes # "
+		std::cout << "\x1B[36msave\033[0m " << file_name_path << " (" << (str.size()) << " bytes # "
 			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl;
 		if (debug_info)
 		{
@@ -339,109 +338,9 @@ struct parsr_document
 		parsr_node node;
 		parsr_node* node2append2 = &node;
 		unsigned int indent = 0;
+		
 		bool well_formed = true;
 
-		const size_t MAX_TOKENS = 4096;
-		size_t tokens[MAX_TOKENS];
-		for (auto& i : tokens) i = std::string::npos;
-		size_t ii = 0;
-		for (size_t i = 0; i < std::string::npos && ii < MAX_TOKENS; i = str.find_first_of("</ =\">", i + 1))
-		{
-			tokens[ii++] = (i); if (debug_info) printf(" %d[%c]", i, str[i]);
-		}
-		if (debug_info) std::cout << std::endl << std::string(9, '-') << " \x1B[35mtokens\033[0m " << std::string(9, '-') << std::endl;
-
-		std::string x, y, z;
-
-		well_formed = false;
-		for (size_t i = 0; i < MAX_TOKENS && tokens[i] != std::string::npos && well_formed; ++i)
-		{
-			if (str[tokens[i]] == '<')
-			{
-				if (str[tokens[i + 1]] == '/')
-				{
-					if (str[tokens[i + 2]] == '>')
-					{
-						if (tokens[i + 1] == tokens[i] + 1)
-						{
-							std::string x = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
-							if (node2append2->name == x)
-							{
-								if (debug_info) std::cout << "</ > #" << x << "#" << std::endl;
-								node2append2 = node2append2->parent;
-								--indent;
-								i += 2;
-							}
-							else
-							{
-								if (debug_info) std::cout << "ill </ >" << std::endl;
-								well_formed = false;
-							}
-						}
-						else if (tokens[i + 1] == tokens[i + 2] - 1)
-						{
-							std::string x = str.substr(tokens[i] + 1, tokens[i + 2] - 1 - (tokens[i] + 1));
-							if (debug_info) std::cout << "< /> #" << x << "#" << std::endl;
-							node2append2->nodes.push_back({ node2append2,indent/*++*/,x });
-							i += 2;
-						}
-						else
-						{
-							if (debug_info) std::cout << "ill < />" << std::endl;
-							well_formed = false;
-						}
-					}
-					else
-					{
-						well_formed = false;
-					}
-				}
-				else if (str[tokens[i + 1]] == '>')
-				{
-					std::string x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
-					if (debug_info) std::cout << "< > #" << x << "#" << std::endl;
-					node2append2->nodes.push_back({ node2append2,indent++,x });
-					node2append2 = &node2append2->nodes.back();
-					++i;
-				}
-				else if (str[tokens[i + 1]] == ' ')
-				{
-					std::string x = str.substr(tokens[i] + 1, tokens[i + 1] - (tokens[i] + 1));
-					if (debug_info) std::cout << "< > #" << x << "#" << std::endl;
-					node2append2->nodes.push_back({ node2append2,indent++,x });
-					node2append2 = &node2append2->nodes.back();
-					while (str[tokens[i + 1]] == ' ')
-					{
-						if (str[tokens[i + 2]] == '=' && str[tokens[i + 3]] == '\"' && str[tokens[i + 4]] == '\"')
-						{
-							std::string n = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
-							std::string v = str.substr(tokens[i + 3] + 1, tokens[i + 4] - (tokens[i + 3] + 1));
-							if (debug_info) std::cout << "= #" << n << "# \"\" #" << v << "#" << std::endl;
-							node2append2->attributes.push_back({ n,v });
-							i += 4;
-						}
-					}
-					if (str[tokens[i + 1]] == '/')
-					{
-						if (str[tokens[i + 2]] == '>')
-						{
-							std::string x = str.substr(tokens[i + 1] + 1, tokens[i + 2] - (tokens[i + 1] + 1));
-							if (debug_info) std::cout << "< /> #" << x << "#" << std::endl;
-							node2append2 = node2append2->parent;
-							--indent;
-							i += 2;
-						}
-					}
-				}
-				else
-				{
-					if (debug_info) std::cout << "ill < >" << std::endl;
-					well_formed = false;
-				}
-			}
-		}
-
-		well_formed = true;
 		size_t cursor = 0;
 		size_t a, b, c, d, e, f;
 
