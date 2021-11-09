@@ -20,23 +20,6 @@ const std::string test =
 "  </subnode>\n"
 "</node>\n";
 
-constexpr const char* colors[] =
-{
-	"\x1B[30m",
-	"\x1B[31m",
-	"\x1B[32m",
-	"\x1B[33m",
-	"\x1B[34m",
-	"\x1B[35m",
-	"\x1B[36m",
-
-};
-
-std::string colorize(const std::string& str)
-{
-	return (colors[rand() % 7] + str + "\033[0m");
-}
-
 template<class T>
 std::ostream& operator<< (std::ostream& stream, const std::list<T>& list)
 {
@@ -149,9 +132,7 @@ struct parsr_node
 	{
 		std::string str;
 		
-		str += std::string(indent * 2, ' ');
-		str += "<";
-		str += name;
+		str += std::string(indent * 2, ' ') + "<" + name;
 		for (auto& a : attributes)
 		{
 			str += a.to_string();
@@ -162,21 +143,16 @@ struct parsr_node
 		}
 		else
 		{
-			str += ">";
-			str += "\n";
+			str += ">\n";
 			if (!text.empty())
 			{
-				str += text;
-				str += "\n";
+				str += text + "\n";
 			}
 			for (auto& n : nodes)
 			{
 				str += n.to_string();
 			}
-			str += std::string(indent * 2, ' ');
-			str += "</";
-			str += name;
-			str += ">";
+			str += std::string(indent * 2, ' ') + "</" + name + ">";
 		}
 		str += "\n";
 
@@ -272,11 +248,22 @@ struct parsr_document
 		/*std::stringstream sstream;
 		sstream << file.rdbuf();
 		std::string str = sstream.str();*/
-		file.close();
 
+		file.close();
+		std::ifstream filer(file_name_path, std::ios::ate);
+		if (filer)
+		{
+			auto fileSize = filer.tellg();
+			filer.seekg(std::ios::beg);
+			std::string content(fileSize, 0);
+			filer.read(&content[0], fileSize);
+
+			std::unique_ptr<char[]> content2(new char[fileSize]);
+			//make_unique
+		}
 		bool parsed = parse_string(str, debug_info);
 		
-		std::cout << "\n\x1B[34mload\033[0m " << file_name_path
+		std::cout << "\n\033[4mload\033[0m " << file_name_path
 			<< (parsed ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m") << " (" << (str.size()) << " bytes # "
 			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl;
 		if (debug_info)
@@ -307,7 +294,7 @@ struct parsr_document
 		}
 		file.close();//ofstream?
 
-		std::cout << "\x1B[36msave\033[0m " << file_name_path << " (" << (str.size()) << " bytes # "
+		std::cout << "\033[4msave\033[0m " << file_name_path << " (" << (str.size()) << " bytes # "
 			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl;
 		if (debug_info)
 		{
@@ -320,7 +307,7 @@ struct parsr_document
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_document& document)
 	{
 		return stream
-			<< "\n\x1B[33mdocument\033[0m" << " ("
+			<< "\n\033[4mdocument\033[0m" << " ("
 			<< document.size() << " bytes # "
 			<< document.count_nodes() << " nodes # "
 			<< document.count_attributes() << " attributes)\n"
