@@ -175,6 +175,8 @@ struct parsr_node
 		}
 		return 0;
 	}
+	//TODO: cannot return nullptr
+	//must change focus
 	const parsr_attribute* attribute(std::string tag) const
 	{
 		for (const auto& i : attributes)
@@ -233,7 +235,7 @@ struct parsr_document
 		return r;
 	}
 
-	bool load(const std::string file_name_path, const bool debug_info = false)
+	bool load(const std::string file_name_path, bool debug_info = false)
 	{
 		auto start_clock = std::chrono::high_resolution_clock::now();
 
@@ -274,7 +276,7 @@ struct parsr_document
 		return parsed;
 	}
 
-	bool save(const std::string file_name_path, const bool debug_info = false)
+	bool save(const std::string file_name_path, bool debug_info = false)
 	{
 		auto start_clock = std::chrono::high_resolution_clock::now();
 
@@ -314,13 +316,16 @@ struct parsr_document
 			<< document.root << std::endl;
 	}
 
-	bool parse_string(const std::string& str, const bool debug_info = false)
+	bool parse_string(const std::string& str, bool debug_info = false)
 	{
+		//TODOS:
 		// throw ill_formed
 		// unique attributes
 		// single root
 		// check find methods ""''[2]
 		// find text
+
+		//improve debug_info behaviour
 
 		parsr_node node;
 		parsr_node* node2append2 = &node;
@@ -337,6 +342,8 @@ struct parsr_document
 			{
 				cursor = b + 1;
 				{
+					//TODO: change logic to push empty node first
+					//then fill its name....
 					if (str[a + 1] == '/'/*&& str[b - 1] != '/'*/)
 					{
 						if (node2append2->name == str.substr(a + 2, b - 1))
@@ -349,7 +356,7 @@ struct parsr_document
 					{
 						node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1,b - 0 - (a + 1)) });
 						node2append2 = &node2append2->nodes.back();
-						std::cout << "#" << node2append2->name << "#" << std::endl;
+						if (debug_info) std::cout << "#" << node2append2->name << "#" << std::endl;
 						for (c = str.find_first_of(" ", a + 1); c != std::string::npos && c < b; c = str.find_first_of(" ", c + 1))
 						{
 							if ((d = str.find_first_of("=", c + 1)) != std::string::npos)
@@ -359,7 +366,7 @@ struct parsr_document
 									if ((f = str.find_first_of("\"", e + 1)) != std::string::npos)
 									{
 										node2append2->attributes.push_back({ str.substr(c + 1,d - 0 - (c + 1)),str.substr(e + 1,f - 0 - (e + 1)) });
-										std::cout << "#" << node2append2->attributes.back() << "#" << std::endl;
+										if (debug_info) std::cout << "#" << node2append2->attributes.back() << "#" << std::endl;
 									}
 								}
 							}
@@ -367,15 +374,15 @@ struct parsr_document
 						if (!node2append2->attributes.empty())
 						{
 							node2append2->name = str.substr(a + 1, str.find_first_of(" ", a + 1) - 0 - (a + 1));
-							std::cout << "#" << node2append2->name << "#" << std::endl;
+							if (debug_info) std::cout << "#" << node2append2->name << "#" << std::endl;
 						}
 						if (str[b - 1] == '/'/*&& str[a + 1] != '/'*/)
 						{
 							if (node2append2->attributes.empty())
 							{
-								std::cout << "#" << node2append2->name << "#" << std::endl;
+								if (debug_info) std::cout << "#" << node2append2->name << "#" << std::endl;
 								node2append2->name.pop_back();
-								std::cout << "#" << node2append2->name << "#" << std::endl;
+								if (debug_info) std::cout << "#" << node2append2->name << "#" << std::endl;
 							}
 							node2append2 = node2append2->parent;
 							--indent;
@@ -388,6 +395,7 @@ struct parsr_document
 		if (well_formed)
 		{
 			clear();
+			//learn if move-constructor is an option here
 			root = node.nodes.front();
 		}
 
