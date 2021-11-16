@@ -350,11 +350,9 @@ struct parsr_document
 					}
 					else
 					{
-						c = str.find_first_of(" ", a + 1);
-						node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1,((c != std::string::npos && c < b) ? c : b) - 0 - (a + 1)) });
+						node2append2->nodes.push_back({ node2append2,indent++, });
 						node2append2 = &node2append2->nodes.back();
-						if (debug_info) std::cout << "#<#" << node2append2->name << std::endl;
-						for (; c != std::string::npos && c < b; c = str.find_first_of(" ", c + 1))
+						for (c = str.find_first_of(" ", a + 1); c != std::string::npos && c < b; c = str.find_first_of(" ", c + 1))
 						{
 							if ((d = str.find("=\"", c + 1)) != std::string::npos)
 							{
@@ -365,6 +363,8 @@ struct parsr_document
 								}
 							}
 						}
+						node2append2->name = str.substr(a + 1, (node2append2->attributes.empty() ? b : str.find_first_of(" ", a + 1)) - 0 - (a + 1));
+						if (debug_info) std::cout << "#<#" << node2append2->name << std::endl;
 						if (str[b - 1] == '/'/*&& str[a + 1] != '/'*/)
 						{
 							if (node2append2->attributes.empty())
@@ -375,6 +375,13 @@ struct parsr_document
 							}
 							node2append2 = node2append2->parent;
 							--indent;
+						}
+						else
+						{
+							if ((f = str.find("<", cursor)) != std::string::npos)
+							{
+
+							}
 						}
 					}
 				}
