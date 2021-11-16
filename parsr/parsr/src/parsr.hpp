@@ -41,11 +41,11 @@ struct parsr_attribute
 		name.clear();
 		value.clear();
 	}
-	
+
 	size_t size() const
 	{
 		size_t r = 0;
-		
+
 		return r;
 	}
 
@@ -80,7 +80,7 @@ struct parsr_attribute
 		s >> r;
 		return r;
 	}
-};
+} static const null_parsr_attribute;
 
 struct parsr_node
 {
@@ -173,10 +173,9 @@ struct parsr_node
 				return &i;
 			}
 		}
-		return 0;
+		return &null_parsr_node;
 	}
-	//TODO: cannot return nullptr
-	//must change focus
+	//mayb bettr 2 scope nulls into node & attribute classes
 	const parsr_attribute* attribute(std::string tag) const
 	{
 		for (const auto& i : attributes)
@@ -186,9 +185,9 @@ struct parsr_node
 				return &i;
 			}
 		}
-		return 0;
+		return &null_parsr_attribute;
 	}
-};
+} static const null_parsr_node;
 
 struct parsr_document
 {
@@ -196,20 +195,19 @@ struct parsr_document
 
 	parsr_document()
 	{
-		// clear();
+
 	}
 
 	parsr_document(const std::string file_name_path)
 	{
-		// clear();
 		load(file_name_path);
 	}
 
 	~parsr_document()
 	{
-		// clear();
-	}
 
+	}
+	// need at constructor and destructor ?
 	void clear()
 	{
 		root.clear();
@@ -263,7 +261,7 @@ struct parsr_document
 			std::unique_ptr<char[]> content2(new char[fileSize]);
 			//make_unique
 		}
-		bool parsed = parse_string(str, debug_info);
+		bool parsed = parse_string(test, debug_info);
 		
 		std::cout << "\n\033[4mload\033[0m " << file_name_path
 			<< (parsed ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m") << " (" << (str.size()) << " bytes # "
@@ -319,10 +317,10 @@ struct parsr_document
 	bool parse_string(const std::string& str, bool debug_info = false)
 	{
 		//TODOS:
+		// check find methods ""''[2]
 		// throw ill_formed
 		// unique attributes
 		// single root
-		// check find methods ""''[2]
 		// find text
 
 		//improve debug_info behaviour
@@ -342,8 +340,6 @@ struct parsr_document
 			{
 				cursor = b + 1;
 				{
-					//TODO: change logic to push empty node first
-					//then fill its name....
 					if (str[a + 1] == '/'/*&& str[b - 1] != '/'*/)
 					{
 						if (node2append2->name == str.substr(a + 2, b - 1))
@@ -354,35 +350,28 @@ struct parsr_document
 					}
 					else
 					{
-						node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1,b - 0 - (a + 1)) });
+						c = str.find_first_of(" ", a + 1);
+						node2append2->nodes.push_back({ node2append2,indent++,str.substr(a + 1,((c != std::string::npos && c < b) ? c : b) - 0 - (a + 1)) });
 						node2append2 = &node2append2->nodes.back();
-						if (debug_info) std::cout << "#" << node2append2->name << "#" << std::endl;
-						for (c = str.find_first_of(" ", a + 1); c != std::string::npos && c < b; c = str.find_first_of(" ", c + 1))
+						if (debug_info) std::cout << "#<#" << node2append2->name << std::endl;
+						for (; c != std::string::npos && c < b; c = str.find_first_of(" ", c + 1))
 						{
-							if ((d = str.find_first_of("=", c + 1)) != std::string::npos)
+							if ((d = str.find("=\"", c + 1)) != std::string::npos)
 							{
-								if ((e = str.find_first_of("\"", d + 1)) != std::string::npos)
+								if ((e = str.find_first_of("\"", d + 2)) != std::string::npos)
 								{
-									if ((f = str.find_first_of("\"", e + 1)) != std::string::npos)
-									{
-										node2append2->attributes.push_back({ str.substr(c + 1,d - 0 - (c + 1)),str.substr(e + 1,f - 0 - (e + 1)) });
-										if (debug_info) std::cout << "#" << node2append2->attributes.back() << "#" << std::endl;
-									}
+									node2append2->attributes.push_back({ str.substr(c + 1,d - 0 - (c + 1)),str.substr(d + 2,e - 0 - (d + 2)) });
+									if (debug_info) std::cout << "#=#" << node2append2->attributes.back() << std::endl;
 								}
 							}
-						}
-						if (!node2append2->attributes.empty())
-						{
-							node2append2->name = str.substr(a + 1, str.find_first_of(" ", a + 1) - 0 - (a + 1));
-							if (debug_info) std::cout << "#" << node2append2->name << "#" << std::endl;
 						}
 						if (str[b - 1] == '/'/*&& str[a + 1] != '/'*/)
 						{
 							if (node2append2->attributes.empty())
 							{
-								if (debug_info) std::cout << "#" << node2append2->name << "#" << std::endl;
+								if (debug_info) std::cout << "#-/#" << node2append2->name << std::endl;
 								node2append2->name.pop_back();
-								if (debug_info) std::cout << "#" << node2append2->name << "#" << std::endl;
+								if (debug_info) std::cout << "#/#" << node2append2->name << std::endl;
 							}
 							node2append2 = node2append2->parent;
 							--indent;
