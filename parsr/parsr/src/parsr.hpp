@@ -15,7 +15,9 @@
 
 const std::string test =
 "<node>\n"
-"  <subnode one=\"1\" two=\"1.99\">\n"
+"  first\n"
+"  <subnode one=\"1\" two=\"1.99\" one=\"repeat\">\n"
+"    second\n"
 "    <subsubnode/>\n"
 "  </subnode>\n"
 "</node>\n";
@@ -40,13 +42,6 @@ struct parsr_attribute
 	{
 		name.clear();
 		value.clear();
-	}
-
-	size_t size() const
-	{
-		size_t r = 0;
-
-		return r;
 	}
 
 	std::string to_string() const
@@ -98,34 +93,6 @@ struct parsr_node
 		attributes.clear();
 		text.clear();
 		nodes.clear();
-	}
-
-	size_t size() const
-	{
-		size_t r = 0;
-		
-		return r;
-	}
-
-	size_t count_nodes() const
-	{
-		size_t r = 0;
-		r += nodes.size();
-		for (const auto& i : nodes)
-		{
-			r += i.count_nodes();
-		}
-		return r;
-	}
-	size_t count_attributes() const
-	{
-		size_t r = 0;
-		r += attributes.size();
-		for (const auto& i : nodes)
-		{
-			r += i.count_attributes();
-		}
-		return r;
 	}
 
 	std::string to_string() const
@@ -213,26 +180,6 @@ struct parsr_document
 		root.clear();
 	}
 
-	size_t size() const
-	{
-		size_t r = 0;
-		
-		return r;
-	}
-
-	size_t count_nodes() const
-	{
-		size_t r = 0;
-		r += root.count_nodes();
-		return r;
-	}
-	size_t count_attributes() const
-	{
-		size_t r = 0;
-		r += root.count_attributes();
-		return r;
-	}
-
 	bool load(const std::string file_name_path, bool debug_info = false)
 	{
 		auto start_clock = std::chrono::high_resolution_clock::now();
@@ -243,11 +190,11 @@ struct parsr_document
 			std::cout << "error: open file" << std::endl;
 			return false;
 		}
-		std::string str, str2;
-		while (std::getline(file, str2)) str += str2 += '\n';
-		/*std::stringstream sstream;
+		//std::string str, str2;
+		//while (std::getline(file, str2)) str += str2;//+ '\n';
+		std::stringstream sstream;
 		sstream << file.rdbuf();
-		std::string str = sstream.str();*/
+		std::string str = sstream.str();
 
 		file.close();
 		std::ifstream filer(file_name_path, std::ios::ate);
@@ -263,9 +210,8 @@ struct parsr_document
 		}
 		bool parsed = parse_string(test, debug_info);
 		
-		std::cout << "\n\033[4mload\033[0m " << file_name_path
-			<< (parsed ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m") << " (" << (str.size()) << " bytes # "
-			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl;
+		std::cout << "\n\033[4mload\033[0m " << file_name_path << (parsed ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m")
+			<< " (" << (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl;
 		if (debug_info)
 		{
 			std::cout << str << *this;
@@ -294,8 +240,8 @@ struct parsr_document
 		}
 		file.close();//ofstream?
 
-		std::cout << "\033[4msave\033[0m " << file_name_path << " (" << (str.size()) << " bytes # "
-			<< (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl;
+		std::cout << "\033[4msave\033[0m " << file_name_path
+			<< " (" << (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl;
 		if (debug_info)
 		{
 			std::cout << str << std::endl;
@@ -306,12 +252,7 @@ struct parsr_document
 
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_document& document)
 	{
-		return stream
-			<< "\n\033[4mdocument\033[0m" << " ("
-			<< document.size() << " bytes # "
-			<< document.count_nodes() << " nodes # "
-			<< document.count_attributes() << " attributes)\n"
-			<< document.root << std::endl;
+		return stream << "\n\033[4mdocument\033[0m\n" << document.root << std::endl;
 	}
 
 	bool parse_string(const std::string& str, bool debug_info = false)
@@ -319,10 +260,8 @@ struct parsr_document
 		//TODOS:
 		// check find methods ""''[2]
 		// throw ill_formed
-		// unique attributes
 		// single root
-		// find text
-
+		//fix blank space after text
 		//improve debug_info behaviour
 
 		parsr_node node;
@@ -358,8 +297,20 @@ struct parsr_document
 							{
 								if ((e = str.find_first_of("\"", d + 2)) != std::string::npos)
 								{
-									node2append2->attributes.push_back({ str.substr(c + 1,d - 0 - (c + 1)),str.substr(d + 2,e - 0 - (d + 2)) });
-									if (debug_info) std::cout << "#=#" << node2append2->attributes.back() << std::endl;
+									std::string aname = str.substr(c + 1, d - 0 - (c + 1));
+									for (auto& an : node2append2->attributes)
+									{
+										if (aname == an.name)
+										{
+											aname.clear();
+											break;
+										}
+									}
+									if (!aname.empty())
+									{
+										node2append2->attributes.push_back({ str.substr(c + 1,d - 0 - (c + 1)),str.substr(d + 2,e - 0 - (d + 2)) });
+										if (debug_info) std::cout << "#=#" << node2append2->attributes.back() << std::endl;
+									}
 								}
 							}
 						}
@@ -380,7 +331,14 @@ struct parsr_document
 						{
 							if ((f = str.find("<", cursor)) != std::string::npos)
 							{
-
+								node2append2->text = str.substr(cursor, f - 0 - cursor);
+								if (debug_info) std::cout << "#" << node2append2->text << "#" << std::endl;
+								node2append2->text.erase(remove(node2append2->text.begin(), node2append2->text.end(), '\n'), node2append2->text.end());
+								if (debug_info) std::cout << "#-#" << node2append2->text << "#" << std::endl;
+								if (node2append2->text.find_first_not_of(" "/*\n"*/) == std::string::npos)
+								{
+									node2append2->text.clear();
+								}
 							}
 						}
 					}
