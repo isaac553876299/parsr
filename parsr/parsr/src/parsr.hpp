@@ -7,7 +7,6 @@
 #include <string>
 #include <list>
 #include <iostream>
-
 #include <sstream>
 
 #
@@ -20,15 +19,14 @@ const std::string test =
 "    <subsubnode/>\n"
 "  </subnode>\n"
 "</node>\n"
-"<root2/>\n";
+"<root2></root2>\n";
 
 #define mydebug(m,x) {std::cout<<":"<<m<<":"<<x<<";"<<std::endl;}
 
 template<class T>
 std::ostream& operator<< (std::ostream& stream, const std::list<T>& list)
 {
-	for (const auto& i : list)
-		stream << i;
+	for (const auto& i : list) stream << i;
 	return stream;
 }
 
@@ -212,7 +210,7 @@ struct parsr_document
 		size_t cursor = 0;
 		size_t a, b, c, d, e, f;
 
-		while ((a = str.find_first_of("<", cursor)) != std::string::npos)
+		while ((a = str.find_first_of("<", cursor)) != std::string::npos && node2append2 != nullptr)
 		{
 			if ((b = str.find_first_of(">", a + 1)) != std::string::npos)
 			{
@@ -220,10 +218,17 @@ struct parsr_document
 				{
 					if (str[a + 1] == '/'/*&& str[b - 1] != '/'*/)
 					{
-						if (node2append2->name == str.substr(a + 2, b - 1))
+						std::string s = str.substr(a + 2, b - (a + 2));
+						if (node2append2->name == str.substr(a + 2, b - (a + 2)))
 						{
-							node2append2 = node2append2->parent;
-							if (node2append2 == &node) break;// single root
+							mydebug("</ >", node2append2->name);
+							node2append2 = node2append2->parent;//problems due to first push to node2append2->nodes
+							std::cout << node2append2 << " " << &node << std::endl;
+							if (node2append2 == &node)//not working
+							{
+								std::cout << node2append2 << " " << &node << std::endl;
+								break;// single root
+							}
 						}
 					}
 					else
