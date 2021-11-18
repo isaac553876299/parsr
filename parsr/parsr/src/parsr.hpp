@@ -7,7 +7,6 @@
 #include <string>
 #include <list>
 #include <iostream>
-#include <chrono>
 
 #include <sstream>
 
@@ -20,9 +19,10 @@ const std::string test =
 "    second\n"
 "    <subsubnode/>\n"
 "  </subnode>\n"
-"</node>\n";
+"</node>\n"
+"<root2/>\n";
 
-#define mydebug(m,x) {std::cout<<"#"<<m<<">>"<<x<<"#"<<std::endl;}
+#define mydebug(m,x) {std::cout<<":"<<m<<":"<<x<<";"<<std::endl;}
 
 template<class T>
 std::ostream& operator<< (std::ostream& stream, const std::list<T>& list)
@@ -139,8 +139,6 @@ struct parsr_document
 
 	bool load(const std::string& file_name_path)
 	{
-		auto start_clock = std::chrono::high_resolution_clock::now();
-
 		std::fstream file(file_name_path, std::ios::in); // using ifstream needn't close()
 		if (!file.is_open()) return false;
 
@@ -164,38 +162,38 @@ struct parsr_document
 		}
 		bool loaded = parse_string(test);
 
-		std::cout << "\n\033[4mload\033[0m " << file_name_path << (loaded ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m")
-			<< " (" << (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl
-			<< str << *this;
+		std::cout << "\033[4mload\033[0m " << file_name_path << (loaded ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m") << std::endl;
 
 		return loaded;
 	}
 
 	bool save(const std::string& file_name_path)
 	{
-		auto start_clock = std::chrono::high_resolution_clock::now();
-
 		std::string str = root.to_string(0);
-		bool saved = !str.empty();
 
-		if (saved)
+		if (!str.empty())
 		{
 			std::fstream file(file_name_path, std::ios::out | std::ios::trunc);
-			if (!file.is_open()) return false;
-			file << str;
-			file.close();//ofstream?
+			if (file.is_open())
+			{
+				file << str;
+				file.close();//ofstream?
+			}
+			else
+			{
+				std::cout << "error: save file" << std::endl;
+				return false;
+			}
 		}
 
-		std::cout << "\033[4msave\033[0m " << file_name_path
-			<< " (" << (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start_clock)).count() << " seconds)" << std::endl
-			<< str << std::endl;
+		std::cout << "\033[4msave\033[0m " << file_name_path << std::endl;
 
-		return saved;
+		return true;
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_document& document)
 	{
-		return stream << "\n\033[4mdocument\033[0m\n" << document.root << std::endl;
+		return stream << "\033[4mdocument\033[0m\n" << document.root << std::endl;
 	}
 
 	bool parse_string(const std::string& str)
@@ -225,6 +223,7 @@ struct parsr_document
 						if (node2append2->name == str.substr(a + 2, b - 1))
 						{
 							node2append2 = node2append2->parent;
+							if (node2append2 == &node) break;// single root
 						}
 					}
 					else
@@ -275,7 +274,7 @@ struct parsr_document
 				}
 			}
 		}
-		//well_formed = (indent == 0);
+
 		if (well_formed)
 		{
 			clear();
