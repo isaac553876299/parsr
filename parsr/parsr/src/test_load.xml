@@ -1,0 +1,8 @@
+<node>
+  first
+  <subnode one="1" two="1.99" one="repeat">
+    second
+    <subsubnode/>
+  </subnode>
+</node>
+<root2/>

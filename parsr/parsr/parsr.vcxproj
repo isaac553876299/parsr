@@ -145,7 +145,8 @@
     <ClCompile Include="src\Source.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="src\test.xml" />
+    <Xml Include="src\test_load.xml" />
+    <Xml Include="src\test_save.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

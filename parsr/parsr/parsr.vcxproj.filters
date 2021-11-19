@@ -25,6 +25,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="src\test.xml" />
+    <Xml Include="src\test_load.xml" />
+    <Xml Include="src\test_save.xml" />
   </ItemGroup>
 </Project>

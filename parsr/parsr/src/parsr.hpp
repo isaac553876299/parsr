@@ -11,16 +11,6 @@
 
 #
 
-const std::string test =
-"<node>\n"
-"  first\n\n"
-"  <subnode one=\"1\" two=\"1.99\" one=\"repeat\">\n"
-"    second\n"
-"    <subsubnode/>\n"
-"  </subnode>\n"
-"</node>\n"
-"<root2/>\n";
-
 #define DEBUG_parse_string 0
 #if DEBUG_parse_string
 #define mydebug(m,x) {std::cout<<":"<<m<<":"<<x<<";"<<std::endl;}
@@ -162,7 +152,7 @@ struct parsr_document
 			//make_unique
 		}*/
 
-		bool loaded = parse_string(test);
+		bool loaded = parse_string(str);
 
 		std::cout << "\033[4mload\033[0m " << file_name_path << (loaded ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m") << std::endl;
 
@@ -202,7 +192,7 @@ struct parsr_document
 	{
 		//TODOS:
 		// check find methods ""''[2]
-		// throw ill_formed
+		// check ill_formed
 
 		parsr_node node;
 		parsr_node* node2append2 = &node;
@@ -285,7 +275,7 @@ struct parsr_document
 				}
 			}
 		}
-
+		well_formed = (node2append2 == &node);
 		if (well_formed)
 		{
 			clear();

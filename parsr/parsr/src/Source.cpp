@@ -6,10 +6,10 @@ int main()
 	while (1)
 	{
 		auto myclock = std::chrono::high_resolution_clock::now();
-		doc.load("src/test.xml");
+		doc.load("src/test_load.xml");
 		std::cout << "//seconds: " << (std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - myclock)).count() << std::endl;
 
-		doc.save("src/test.xml");
+		doc.save("src/test_save.xml");
 
 		std::cout << doc << std::endl;
 
