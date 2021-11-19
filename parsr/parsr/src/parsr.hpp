@@ -13,15 +13,20 @@
 
 const std::string test =
 "<node>\n"
-"  first\n"
+"  first\n\n"
 "  <subnode one=\"1\" two=\"1.99\" one=\"repeat\">\n"
 "    second\n"
 "    <subsubnode/>\n"
 "  </subnode>\n"
 "</node>\n"
-"<root2></root2>\n";
+"<root2/>\n";
 
+#define DEBUG_parse_string 0
+#if DEBUG_parse_string
 #define mydebug(m,x) {std::cout<<":"<<m<<":"<<x<<";"<<std::endl;}
+#else
+#define mydebug
+#endif
 
 template<class T>
 std::ostream& operator<< (std::ostream& stream, const std::list<T>& list)
@@ -78,7 +83,7 @@ struct parsr_node
 		else
 		{
 			str += ">\n";
-			if (!text.empty()) str += text + "\n";
+			if (!text.empty()) str += std::string((indent + 1) * 2, ' ') + text + "\n";
 			for (auto& n : children) str += n.to_string(indent + 1);
 			str += std::string(indent * 2, ' ') + "</" + name + ">\n";
 		}
@@ -117,7 +122,7 @@ struct parsr_document
 
 	parsr_document()
 	{
-		//clear();
+		// clear();
 	}
 
 	parsr_document(const std::string& file_name_path)
@@ -139,15 +144,13 @@ struct parsr_document
 	{
 		std::fstream file(file_name_path, std::ios::in); // using ifstream needn't close()
 		if (!file.is_open()) return false;
-
 		//std::string str, str2;
 		//while (std::getline(file, str2)) str += str2;//+ '\n';
 		std::stringstream sstream;
 		sstream << file.rdbuf();
 		std::string str = sstream.str();
-
 		file.close();
-		std::ifstream filer(file_name_path, std::ios::ate);
+		/*std::ifstream filer(file_name_path, std::ios::ate);
 		if (filer)
 		{
 			auto fileSize = filer.tellg();
@@ -157,7 +160,8 @@ struct parsr_document
 
 			std::unique_ptr<char[]> content2(new char[fileSize]);
 			//make_unique
-		}
+		}*/
+
 		bool loaded = parse_string(test);
 
 		std::cout << "\033[4mload\033[0m " << file_name_path << (loaded ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m") << std::endl;
@@ -199,8 +203,6 @@ struct parsr_document
 		//TODOS:
 		// check find methods ""''[2]
 		// throw ill_formed
-		// single root
-		// check text
 
 		parsr_node node;
 		parsr_node* node2append2 = &node;
@@ -208,7 +210,7 @@ struct parsr_document
 		bool well_formed = true;
 
 		size_t cursor = 0;
-		size_t a, b, c, d, e, f;
+		size_t a, b, c, d, e, f, g, h;
 
 		while ((a = str.find_first_of("<", cursor)) != std::string::npos && node2append2 != nullptr)
 		{
@@ -222,11 +224,12 @@ struct parsr_document
 						if (node2append2->name == str.substr(a + 2, b - (a + 2)))
 						{
 							mydebug("</ >", node2append2->name);
-							node2append2 = node2append2->parent;//problems due to first push to node2append2->nodes
-							std::cout << node2append2 << " " << &node << std::endl;
-							if (node2append2 == &node)//not working
+							mydebug(node2append2, &node);
+							node2append2 = node2append2->parent;// mind node2append2->children.pushback
+							mydebug(node2append2, &node);
+							if (node2append2 == &node)
 							{
-								std::cout << node2append2 << " " << &node << std::endl;
+								mydebug("*==&", node2append2);
 								break;// single root
 							}
 						}
@@ -267,12 +270,15 @@ struct parsr_document
 							{
 								node2append2->text = str.substr(cursor, f - cursor);
 								mydebug("text", node2append2->text);
-								node2append2->text.erase(remove(node2append2->text.begin(), node2append2->text.end(), '\n'), node2append2->text.end());
-								mydebug("text", node2append2->text);
-								if (node2append2->text.find_first_not_of(" "/*\n"*/) == std::string::npos)
+								//node2append2->text.erase(remove(node2append2->text.begin(), node2append2->text.end(), '\n'), node2append2->text.end());
+								if ((g = node2append2->text.find_first_not_of(" \n")) != std::string::npos)
 								{
-									node2append2->text.clear();
+									if ((h = node2append2->text.find_last_not_of(" \n")) != std::string::npos)
+									{
+										node2append2->text = node2append2->text.substr(g, h - g + 1);
+									}
 								}
+								mydebug("text", node2append2->text);
 							}
 						}
 					}

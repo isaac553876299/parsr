@@ -1,7 +1,7 @@
 <node>
-  first  
+  first
   <subnode one="1" two="1.99">
-    second    
+    second
     <subsubnode/>
   </subnode>
 </node>
