@@ -11,13 +11,6 @@
 
 #
 
-#define DEBUG_parse_string 0
-#if DEBUG_parse_string
-#define mydebug(m,x) {std::cout<<":"<<m<<":"<<x<<";"<<std::endl;}
-#else
-#define mydebug
-#endif
-
 template<class T>
 std::ostream& operator<< (std::ostream& stream, const std::list<T>& list)
 {
@@ -77,7 +70,6 @@ struct parsr_node
 			for (auto& n : children) str += n.to_string(indent + 1);
 			str += std::string(indent * 2, ' ') + "</" + name + ">\n";
 		}
-
 		return str;
 	}
 
@@ -134,20 +126,14 @@ struct parsr_document
 		if (!file.is_open()) return false;
 		std::stringstream sstream;
 		sstream << file.rdbuf();
-		std::string str = sstream.str();
 		file.close();// needn't¿
-
-		bool loaded = parse_string(str);
-
-		std::cout << "\033[4mload\033[0m " << file_name_path << (loaded ? " \x1B[32mwell_formed\033[0m" : " \x1B[31mill_formed\033[0m") << std::endl;
-
-		return loaded;
+		std::string str = sstream.str();
+		return parse_string(str);
 	}
 
 	bool save(const std::string& file_name_path)
 	{
 		std::string str = root.to_string(0);
-
 		if (!str.empty())
 		{
 			std::fstream file(file_name_path, std::ios::out | std::ios::trunc);
@@ -155,22 +141,15 @@ struct parsr_document
 			{
 				file << str;
 				file.close();// needn't¿
-			}
-			else
-			{
-				std::cout << "error: save file" << std::endl;
-				return false;
+				return true;
 			}
 		}
-
-		std::cout << "\033[4msave\033[0m " << file_name_path << std::endl;
-
-		return true;
+		return false;
 	}
 
 	friend std::ostream& operator<< (std::ostream& stream, const parsr_document& document)
 	{
-		return stream << "\033[4mdocument\033[0m\n" << document.root << std::endl;
+		return stream << document.root << std::endl;
 	}
 
 	bool parse_string(const std::string& str)
@@ -198,13 +177,9 @@ struct parsr_document
 						std::string s = str.substr(a + 2, b - (a + 2));
 						if (node2append2->name == str.substr(a + 2, b - (a + 2)))
 						{
-							mydebug("</ >", node2append2->name);
-							mydebug(node2append2, &node);
 							node2append2 = node2append2->parent;// mind node2append2->children.pushback
-							mydebug(node2append2, &node);
 							if (node2append2 == &node)
 							{
-								mydebug("*==&", node2append2);
 								break;// single root
 							}
 						}
@@ -222,20 +197,16 @@ struct parsr_document
 									if (node2append2->attribute(str.substr(c + 1, d - (c + 1))).name.empty())
 									{
 										node2append2->attributes.push_back({ str.substr(c + 1,d - (c + 1)),str.substr(d + 2,e - (d + 2)) });
-										mydebug("attribute", node2append2->attributes.back());
 									}
 								}
 							}
 						}
 						node2append2->name = str.substr(a + 1, (node2append2->attributes.empty() ? b : str.find_first_of(" ", a + 1)) - (a + 1));
-						mydebug("node", node2append2->name);
 						if (str[b - 1] == '/'/*&& str[a + 1] != '/'*/)
 						{
 							if (node2append2->attributes.empty())
 							{
-								mydebug("node/", node2append2->name);
 								node2append2->name.pop_back();
-								mydebug("node-/", node2append2->name);
 							}
 							node2append2 = node2append2->parent;
 						}
@@ -244,7 +215,6 @@ struct parsr_document
 							if ((f = str.find("<", cursor)) != std::string::npos)
 							{
 								node2append2->text = str.substr(cursor, f - cursor);
-								mydebug("text", node2append2->text);
 								//node2append2->text.erase(remove(node2append2->text.begin(), node2append2->text.end(), '\n'), node2append2->text.end());
 								if ((g = node2append2->text.find_first_not_of(" \n")) != std::string::npos)
 								{
@@ -253,7 +223,6 @@ struct parsr_document
 										node2append2->text = node2append2->text.substr(g, h - g + 1);
 									}
 								}
-								mydebug("text", node2append2->text);
 							}
 						}
 					}
