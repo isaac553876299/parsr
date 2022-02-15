@@ -46,7 +46,7 @@ struct parsr_attribute
 		return stream << attribute.to_string();
 	}
 
-} static const null_parsr_attribute;
+};
 
 struct parsr_node
 {
@@ -58,7 +58,7 @@ struct parsr_node
 
 	void clear()
 	{
-		// parent?
+		// parent¿
 		name.clear();
 		attributes.clear();
 		text.clear();
@@ -86,25 +86,23 @@ struct parsr_node
 		return stream << node.to_string(0);
 	}
 
-	const parsr_node* child(const std::string& tag) const
+	const parsr_node& child(const std::string& tag) const
 	{
 		for (const auto& i : children)
 			if (i.name == tag)
-				return &i;
-
-		return &null_parsr_node;
+				return i;
+		return parsr_node{};// static¿
 	}
-	//mayb bettr 2 scope nulls into node & attribute classes
-	const parsr_attribute* attribute(const std::string& tag) const
+
+	const parsr_attribute& attribute(const std::string& tag) const
 	{
 		for (const auto& i : attributes)
 			if (i.name == tag)
-				return &i;
-
-		return &null_parsr_attribute;
+				return i;
+		return parsr_attribute{};// static¿
 	}
 
-} static const null_parsr_node;
+};
 
 struct parsr_document
 {
@@ -112,7 +110,7 @@ struct parsr_document
 
 	parsr_document()
 	{
-		// clear();
+		// clear¿
 	}
 
 	parsr_document(const std::string& file_name_path)
@@ -132,25 +130,12 @@ struct parsr_document
 
 	bool load(const std::string& file_name_path)
 	{
-		std::fstream file(file_name_path, std::ios::in); // using ifstream needn't close()
+		std::fstream file(file_name_path, std::ios::in);
 		if (!file.is_open()) return false;
-		//std::string str, str2;
-		//while (std::getline(file, str2)) str += str2;//+ '\n';
 		std::stringstream sstream;
 		sstream << file.rdbuf();
 		std::string str = sstream.str();
-		file.close();
-		/*std::ifstream filer(file_name_path, std::ios::ate);
-		if (filer)
-		{
-			auto fileSize = filer.tellg();
-			filer.seekg(std::ios::beg);
-			std::string content(fileSize, 0);
-			filer.read(&content[0], fileSize);
-
-			std::unique_ptr<char[]> content2(new char[fileSize]);
-			//make_unique
-		}*/
+		file.close();// needn't¿
 
 		bool loaded = parse_string(str);
 
@@ -169,7 +154,7 @@ struct parsr_document
 			if (file.is_open())
 			{
 				file << str;
-				file.close();//ofstream?
+				file.close();// needn't¿
 			}
 			else
 			{
@@ -234,7 +219,7 @@ struct parsr_document
 							{
 								if ((e = str.find_first_of("\"", d + 2)) != std::string::npos)
 								{
-									if (node2append2->attribute(str.substr(c + 1, d - (c + 1)))->name.empty())
+									if (node2append2->attribute(str.substr(c + 1, d - (c + 1))).name.empty())
 									{
 										node2append2->attributes.push_back({ str.substr(c + 1,d - (c + 1)),str.substr(d + 2,e - (d + 2)) });
 										mydebug("attribute", node2append2->attributes.back());
